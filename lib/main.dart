@@ -1,0 +1,49 @@
+import 'package:flutter/material.dart';
+import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/theme.dart';
+import 'package:sub_get/screens/splash_screen.dart';
+import 'package:sub_get/screens/login_screen.dart';
+import 'package:sub_get/screens/navigation_shell.dart';
+import 'package:sub_get/screens/task_details_screen.dart';
+import 'package:sub_get/screens/create_campaign_screen.dart';
+import 'package:sub_get/screens/wallet_screen.dart';
+import 'package:sub_get/screens/withdraw_screen.dart';
+import 'package:sub_get/screens/settings_screen.dart';
+import 'package:sub_get/screens/notifications_screen.dart';
+import 'package:sub_get/screens/admin_portal_screen.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize local DB and preferences state notifier
+  final db = MockDatabase();
+  await db.init();
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'SubGet',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const NavigationShell(),
+        '/task_details': (context) => const TaskDetailsScreen(),
+        '/create_campaign': (context) => const CreateCampaignScreen(),
+        '/wallet': (context) => const WalletScreen(),
+        '/withdraw': (context) => const WithdrawScreen(),
+        '/settings': (context) => const SettingsScreen(),
+        '/notifications': (context) => const NotificationsScreen(),
+        '/admin_portal': (context) => const AdminPortalScreen(),
+      },
+    );
+  }
+}
