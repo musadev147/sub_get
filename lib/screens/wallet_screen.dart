@@ -116,15 +116,6 @@ class WalletScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Quick cashout banner
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/withdraw');
-                  },
-                  icon: const Icon(Icons.payments_outlined),
-                  label: const Text('Request Withdraw'),
-                ),
-                const SizedBox(height: 24),
                 // Withdraw History Header
                 Text(
                   'Withdrawal History',

@@ -44,36 +44,23 @@ class _NavigationShellState extends State<NavigationShell> {
             title: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: AppTheme.primary.withOpacity(0.2),
-                  child: Text(
-                    user.name.substring(0, 1).toUpperCase(),
-                    style: const TextStyle(color: AppTheme.primaryLight, fontWeight: FontWeight.bold),
+                  backgroundColor: AppTheme.primary,
+                  child: const Text(
+                    'W',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user.name,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                    ),
-                    if (user.status == 'blocked')
-                      const Text(
-                        'Blocked',
-                        style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold),
-                      )
-                    else if (db.isAdmin)
-                      const Text(
-                        'Administrator',
-                        style: TextStyle(color: AppTheme.accent, fontSize: 10, fontWeight: FontWeight.bold),
-                      )
-                    else
-                      const Text(
-                        'Active Worker',
-                        style: TextStyle(color: AppTheme.secondary, fontSize: 10),
-                      ),
-                  ],
+                const Expanded(
+                  child: Text(
+                    'Social Booster',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -102,7 +89,7 @@ class _NavigationShellState extends State<NavigationShell> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               // Notifications bell
               Stack(
                 alignment: Alignment.center,
@@ -140,7 +127,57 @@ class _NavigationShellState extends State<NavigationShell> {
                     ),
                 ],
               ),
-              const SizedBox(width: 8),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  if (value == 'about') {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: AppTheme.cardBg,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Text('About Us'),
+                        content: const Text('Social Booster helps you boost your social media accounts and earn coins by completing simple microtasks.'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else if (value == 'rate') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Thank you for rating us!'),
+                        backgroundColor: AppTheme.secondary,
+                      ),
+                    );
+                  } else if (value == 'share') {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Sharing link copied to clipboard!'),
+                        backgroundColor: AppTheme.secondary,
+                      ),
+                    );
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'about',
+                    child: Text('About Us'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'rate',
+                    child: Text('Rate Us'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: Text('Share App'),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 4),
             ],
           ),
           body: IndexedStack(

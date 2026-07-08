@@ -26,10 +26,8 @@ class CampaignTab extends StatelessWidget {
         final db = MockDatabase();
         final user = db.currentUser;
         
-        // Show campaigns created by current user. If admin, show all campaigns.
-        final myCampaigns = db.isAdmin
-            ? db.campaigns
-            : db.campaigns.where((c) => c.createdBy == user?.id).toList();
+        // Show campaigns created by current user.
+        final myCampaigns = db.campaigns.where((c) => c.createdBy == user?.id).toList();
 
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -44,36 +42,21 @@ class CampaignTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        db.isAdmin ? 'All Campaigns (Admin)' : 'My Campaigns',
+                        'My Campaigns',
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        db.isAdmin
-                            ? 'Review and manage user submissions'
-                            : 'Promote your links & check worker progress',
+                        'Promote your links & check worker progress',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ),
-                  if (db.isAdmin)
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accent,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/admin_portal');
-                      },
-                      icon: const Icon(Icons.admin_panel_settings, size: 16),
-                      label: const Text('Portal', style: TextStyle(fontSize: 12)),
-                    ),
                 ],
               ),
               const SizedBox(height: 20),
               // Action Button to Create
-              if (!db.isAdmin)
-                ElevatedButton.icon(
+              ElevatedButton.icon(
                   onPressed: () {
                     Navigator.pushNamed(context, '/create_campaign');
                   },
@@ -94,13 +77,11 @@ class CampaignTab extends StatelessWidget {
                               'No campaigns yet',
                               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
-                            if (!db.isAdmin) ...[
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Tap the button above to boost your social page',
-                                style: TextStyle(color: AppTheme.textSecondary),
-                              ),
-                            ],
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Tap the button above to boost your social page',
+                              style: TextStyle(color: AppTheme.textSecondary),
+                            ),
                           ],
                         ),
                       )
@@ -199,36 +180,7 @@ class CampaignTab extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                                // Admin Approval Actions overlay inside Campaign list
-                                if (db.isAdmin && camp.status == 'pending') ...[
-                                  const SizedBox(height: 16),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          style: OutlinedButton.styleFrom(
-                                            side: const BorderSide(color: Colors.redAccent),
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                          ),
-                                          onPressed: () => db.adminRejectCampaign(camp.id),
-                                          child: const Text('Reject', style: TextStyle(color: Colors.redAccent)),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: AppTheme.secondary,
-                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                            padding: const EdgeInsets.symmetric(vertical: 8),
-                                          ),
-                                          onPressed: () => db.adminApproveCampaign(camp.id),
-                                          child: const Text('Approve'),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                // No Admin Actions overlay
                               ],
                             ),
                           );
