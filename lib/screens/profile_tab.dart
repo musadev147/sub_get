@@ -108,6 +108,13 @@ class ProfileTab extends StatelessWidget {
                 icon: Icons.settings_outlined,
                 onTap: () => Navigator.pushNamed(context, '/settings'),
               ),
+              _buildMenuItem(
+                context,
+                title: 'Support & Help Desk',
+                subtitle: 'FAQ & ask for administrator assistance',
+                icon: Icons.support_agent_outlined,
+                onTap: () => Navigator.pushNamed(context, '/support'),
+              ),
               const SizedBox(height: 12),
               // Logout Button
               Padding(

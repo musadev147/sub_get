@@ -12,6 +12,7 @@ import 'package:sub_get/screens/settings_screen.dart';
 import 'package:sub_get/screens/notifications_screen.dart';
 import 'package:sub_get/screens/signup_screen.dart';
 import 'package:sub_get/screens/forgot_password_screen.dart';
+import 'package:sub_get/screens/support_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         '/notifications': (context) => const NotificationsScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
+        '/support': (context) => const SupportScreen(),
       },
     );
   }

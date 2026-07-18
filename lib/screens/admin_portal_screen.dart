@@ -56,7 +56,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Admin Portal'),
@@ -65,6 +65,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
               Tab(icon: Icon(Icons.campaign), text: 'Campaigns'),
               Tab(icon: Icon(Icons.payments), text: 'Withdraws'),
               Tab(icon: Icon(Icons.settings), text: 'Config'),
+              Tab(icon: Icon(Icons.support_agent), text: 'Support'),
             ],
             indicatorColor: AppTheme.accent,
             labelColor: AppTheme.accent,
@@ -94,6 +95,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
 
                 // Tab 3: Global System Settings
                 _buildSettingsTab(context),
+
+                // Tab 4: Support Tickets
+                _buildSupportTab(context, db),
               ],
             );
           },
@@ -325,6 +329,210 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                 : const Text('Save Parameters'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSupportTab(BuildContext context, MockDatabase db) {
+    final pending = db.tickets.where((t) => t.status == 'pending').toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final resolved = db.tickets.where((t) => t.status == 'resolved').toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    if (pending.isEmpty && resolved.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.mark_chat_read_outlined, size: 64, color: AppTheme.secondary),
+            SizedBox(height: 16),
+            Text('All clear! No support tickets.', style: TextStyle(color: AppTheme.textSecondary)),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        if (pending.isNotEmpty) ...[
+          const Text(
+            'Pending Tickets',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.amber),
+          ),
+          const SizedBox(height: 12),
+          ...pending.map((t) => _buildTicketAdminCard(context, t, db)),
+          const SizedBox(height: 24),
+        ],
+        if (resolved.isNotEmpty) ...[
+          const Text(
+            'Resolved Tickets',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.secondary),
+          ),
+          const SizedBox(height: 12),
+          ...resolved.map((t) => _buildTicketAdminCard(context, t, db)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildTicketAdminCard(BuildContext context, SupportTicket ticket, MockDatabase db) {
+    final isPending = ticket.status == 'pending';
+    final replyController = TextEditingController();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: ExpansionTile(
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: isPending ? Colors.amber.withOpacity(0.15) : AppTheme.secondary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                ticket.status.toUpperCase(),
+                style: TextStyle(
+                  color: isPending ? Colors.amber : AppTheme.secondary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Text(
+              '${ticket.createdAt.day}/${ticket.createdAt.month} ${ticket.createdAt.hour}:${ticket.createdAt.minute.toString().padLeft(2, '0')}',
+              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                ticket.subject,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'By: ${ticket.userName} (${ticket.userEmail})',
+                style: const TextStyle(color: AppTheme.primaryLight, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Divider(height: 1, color: AppTheme.border),
+                const SizedBox(height: 12),
+                const Text(
+                  'Message Detail:',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 4),
+                Text(ticket.message, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary)),
+                if (ticket.reply != null) ...[
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: AppTheme.border),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Your Reply:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: AppTheme.secondary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(ticket.reply!, style: const TextStyle(fontSize: 13, color: AppTheme.textPrimary)),
+                ],
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: AppTheme.cardBg,
+                            title: const Text('Delete Ticket'),
+                            content: const Text('Are you sure you want to delete this ticket?'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                              TextButton(
+                                onPressed: () {
+                                  db.adminDeleteTicket(ticket.id);
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                    if (isPending) ...[
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primary,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.reply, size: 16),
+                        label: const Text('Reply', style: TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: AppTheme.cardBg,
+                              title: Text('Reply to: ${ticket.subject}'),
+                              content: TextFormField(
+                                controller: replyController,
+                                maxLines: 4,
+                                decoration: const InputDecoration(
+                                  hintText: 'Type your reply here...',
+                                ),
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                TextButton(
+                                  onPressed: () {
+                                    if (replyController.text.trim().isNotEmpty) {
+                                      db.adminReplyTicket(ticket.id, replyController.text.trim());
+                                      Navigator.pop(context);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Reply sent successfully!'),
+                                          backgroundColor: AppTheme.secondary,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  child: const Text('Send Reply', style: TextStyle(color: AppTheme.secondary)),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -236,6 +236,62 @@ class AppNotification {
       );
 }
 
+class SupportTicket {
+  final String id;
+  final String userId;
+  final String userName;
+  final String userEmail;
+  final String category;
+  final String subject;
+  final String message;
+  final DateTime createdAt;
+  String status; // 'pending', 'resolved'
+  String? reply;
+  DateTime? repliedAt;
+
+  SupportTicket({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    required this.userEmail,
+    required this.category,
+    required this.subject,
+    required this.message,
+    required this.createdAt,
+    this.status = 'pending',
+    this.reply,
+    this.repliedAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'userId': userId,
+        'userName': userName,
+        'userEmail': userEmail,
+        'category': category,
+        'subject': subject,
+        'message': message,
+        'createdAt': createdAt.toIso8601String(),
+        'status': status,
+        'reply': reply,
+        'repliedAt': repliedAt?.toIso8601String(),
+      };
+
+  factory SupportTicket.fromJson(Map<String, dynamic> json) => SupportTicket(
+        id: json['id'],
+        userId: json['userId'],
+        userName: json['userName'],
+        userEmail: json['userEmail'],
+        category: json['category'],
+        subject: json['subject'],
+        message: json['message'],
+        createdAt: DateTime.parse(json['createdAt']),
+        status: json['status'] ?? 'pending',
+        reply: json['reply'],
+        repliedAt: json['repliedAt'] != null ? DateTime.parse(json['repliedAt']) : null,
+      );
+}
+
 // --- DATABASE & STATE MANAGER ---
 
 class MockDatabase extends ChangeNotifier {
@@ -248,6 +304,7 @@ class MockDatabase extends ChangeNotifier {
   List<TaskAttempt> _tasks = [];
   List<WalletTransaction> _transactions = [];
   List<AppNotification> _notifications = [];
+  List<SupportTicket> _tickets = [];
 
   // Global Admin Settings
   int minWithdrawCoins = 1000; 
@@ -258,6 +315,7 @@ class MockDatabase extends ChangeNotifier {
   List<TaskAttempt> get tasks => _tasks;
   List<WalletTransaction> get transactions => _transactions;
   List<AppNotification> get notifications => _notifications;
+  List<SupportTicket> get tickets => _tickets;
 
   bool get isAdmin => _currentUser?.email.toLowerCase() == 'admin@admin.com';
 
@@ -298,6 +356,15 @@ class MockDatabase extends ChangeNotifier {
     if (notifsStr != null) {
       final List dec = json.decode(notifsStr);
       _notifications = dec.map((e) => AppNotification.fromJson(e)).toList();
+    }
+
+    // Load Support Tickets
+    final ticketsStr = prefs.getString('tickets');
+    if (ticketsStr != null) {
+      final List dec = json.decode(ticketsStr);
+      _tickets = dec.map((e) => SupportTicket.fromJson(e)).toList();
+    } else {
+      _loadSeedTickets();
     }
 
     // Global settings
@@ -398,6 +465,41 @@ class MockDatabase extends ChangeNotifier {
   Future<void> _saveNotifications() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('notifications', json.encode(_notifications.map((e) => e.toJson()).toList()));
+  }
+
+  Future<void> _saveTickets() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('tickets', json.encode(_tickets.map((e) => e.toJson()).toList()));
+  }
+
+  void _loadSeedTickets() {
+    _tickets = [
+      SupportTicket(
+        id: 'ticket_1',
+        userId: 'user_1',
+        userName: 'Tasker Pro',
+        userEmail: 'tasker@example.com',
+        category: 'Payment',
+        subject: 'Withdrawal delays',
+        message: 'I requested a withdrawal of 1000 coins yesterday. It is still pending. Can you please check?',
+        createdAt: DateTime.now().subtract(const Duration(days: 3)),
+        status: 'resolved',
+        reply: 'Hi! Withdrawals are processed within 24 hours. Your payout has been completed successfully.',
+        repliedAt: DateTime.now().subtract(const Duration(days: 2)),
+      ),
+      SupportTicket(
+        id: 'ticket_2',
+        userId: 'user_2',
+        userName: 'John Doe',
+        userEmail: 'john@example.com',
+        category: 'Task Issue',
+        subject: 'Task stay time validation failed',
+        message: 'I stayed on the Youtube video for more than 30 seconds but the task was marked as failed.',
+        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
+        status: 'pending',
+      )
+    ];
+    _saveTickets();
   }
 
   Future<void> saveSettings() async {
@@ -750,5 +852,57 @@ class MockDatabase extends ChangeNotifier {
       await _saveUser();
     }
     notifyListeners();
+  }
+
+  // --- SUPPORT TICKET FLOWS ---
+
+  Future<void> createSupportTicket(String category, String subject, String message) async {
+    if (_currentUser == null) throw Exception('Not logged in');
+    final ticket = SupportTicket(
+      id: 'ticket_${DateTime.now().millisecondsSinceEpoch}',
+      userId: _currentUser!.id,
+      userName: _currentUser!.name,
+      userEmail: _currentUser!.email,
+      category: category,
+      subject: subject,
+      message: message,
+      createdAt: DateTime.now(),
+    );
+    _tickets.add(ticket);
+    await _saveTickets();
+    notifyListeners();
+  }
+
+  Future<void> adminReplyTicket(String ticketId, String replyText) async {
+    final idx = _tickets.indexWhere((t) => t.id == ticketId);
+    if (idx != -1) {
+      _tickets[idx].status = 'resolved';
+      _tickets[idx].reply = replyText;
+      _tickets[idx].repliedAt = DateTime.now();
+      await _saveTickets();
+
+      // Add a notification for the user
+      addNotification(
+        _tickets[idx].userId,
+        'Support Ticket Resolved 💬',
+        'Your ticket about "${_tickets[idx].subject}" has been answered.',
+      );
+      notifyListeners();
+    }
+  }
+
+  Future<void> adminDeleteTicket(String ticketId) async {
+    _tickets.removeWhere((t) => t.id == ticketId);
+    await _saveTickets();
+    notifyListeners();
+  }
+
+  Future<void> resolveTicket(String ticketId) async {
+    final idx = _tickets.indexWhere((t) => t.id == ticketId);
+    if (idx != -1) {
+      _tickets[idx].status = 'resolved';
+      await _saveTickets();
+      notifyListeners();
+    }
   }
 }
