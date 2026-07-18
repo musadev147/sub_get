@@ -55,11 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _quickAdminLogin() {
-    _emailController.text = 'admin@admin.com';
-    _passwordController.text = 'admin123';
-    _login();
-  }
+
 
   void _quickUserLogin() {
     _emailController.text = 'worker@gmail.com';
@@ -153,7 +149,20 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/forgot_password');
+                  },
+                  child: const Text(
+                    'Forgot Password?',
+                    style: TextStyle(color: AppTheme.primaryLight, fontSize: 13),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _isLoading ? null : _login,
                 child: _isLoading
@@ -163,6 +172,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Text('Sign In'),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Don\'t have an account? ', style: TextStyle(color: AppTheme.textSecondary)),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, '/signup');
+                    },
+                    child: const Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        color: AppTheme.primaryLight,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 32),
               const Row(
@@ -179,30 +207,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: _isLoading ? null : _quickUserLogin,
-                      child: const Text('Worker Login'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: _isLoading ? null : _quickAdminLogin,
-                      child: const Text('Admin Login', style: TextStyle(color: AppTheme.accent)),
-                    ),
-                  ),
-                ],
+              OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: _isLoading ? null : _quickUserLogin,
+                child: const Text('Demo Login'),
               ),
             ],
           ),

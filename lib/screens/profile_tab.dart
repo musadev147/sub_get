@@ -96,22 +96,6 @@ class ProfileTab extends StatelessWidget {
               ),
               _buildMenuItem(
                 context,
-                title: 'Withdraw Coins',
-                subtitle: 'Cash out to bKash, Nagad, Rocket, Bank',
-                icon: Icons.payments_outlined,
-                onTap: () => Navigator.pushNamed(context, '/withdraw'),
-              ),
-              if (db.isAdmin)
-                _buildMenuItem(
-                  context,
-                  title: 'Admin Control Portal',
-                  subtitle: 'Manage approvals, timers, block list',
-                  icon: Icons.admin_panel_settings_outlined,
-                  iconColor: AppTheme.accent,
-                  onTap: () => Navigator.pushNamed(context, '/admin_portal'),
-                ),
-              _buildMenuItem(
-                context,
                 title: 'Notifications',
                 subtitle: 'Updates on task completions and withdrawals',
                 icon: Icons.notifications_none_outlined,

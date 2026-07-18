@@ -10,7 +10,8 @@ import 'package:sub_get/screens/wallet_screen.dart';
 import 'package:sub_get/screens/withdraw_screen.dart';
 import 'package:sub_get/screens/settings_screen.dart';
 import 'package:sub_get/screens/notifications_screen.dart';
-import 'package:sub_get/screens/admin_portal_screen.dart';
+import 'package:sub_get/screens/signup_screen.dart';
+import 'package:sub_get/screens/forgot_password_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +43,8 @@ class MyApp extends StatelessWidget {
         '/withdraw': (context) => const WithdrawScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/notifications': (context) => const NotificationsScreen(),
-        '/admin_portal': (context) => const AdminPortalScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/forgot_password': (context) => const ForgotPasswordScreen(),
       },
     );
   }

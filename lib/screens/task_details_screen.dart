@@ -15,6 +15,77 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
   late Campaign campaign;
   TaskAttempt? activeAttempt;
   
+  String? _getYouTubeId(String url) {
+    try {
+      final uri = Uri.parse(url);
+      if (uri.host.contains('youtube.com') || uri.host.contains('youtu.be')) {
+        if (uri.host.contains('youtu.be')) {
+          return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
+        }
+        if (uri.queryParameters.containsKey('v')) {
+          return uri.queryParameters['v'];
+        }
+        if (uri.pathSegments.contains('embed')) {
+          final index = uri.pathSegments.indexOf('embed');
+          if (index + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[index + 1];
+          }
+        }
+        if (uri.pathSegments.contains('v')) {
+          final index = uri.pathSegments.indexOf('v');
+          if (index + 1 < uri.pathSegments.length) {
+            return uri.pathSegments[index + 1];
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Map<String, String> _getMockStats(String id) {
+    final codeSum = id.codeUnits.fold(0, (sum, unit) => sum + unit);
+    final views = ((codeSum * 17) % 850 + 150) * 10;
+    final likes = (views * 0.12).round();
+    final comments = (likes * 0.08).round();
+
+    return {
+      'views': views >= 1000 ? '${(views / 1000).toStringAsFixed(1)}K' : '$views',
+      'likes': likes >= 1000 ? '${(likes / 1000).toStringAsFixed(1)}K' : '$likes',
+      'comments': '$comments',
+    };
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: AppTheme.textSecondary),
+            const SizedBox(width: 6),
+            Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatDivider() {
+    return Container(
+      height: 20,
+      width: 1,
+      color: AppTheme.border,
+    );
+  }
+  
   bool _isTaskStarted = false;
   bool _isValidationReady = false;
   bool _isVerifying = false;
@@ -194,6 +265,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
 
   @override
   Widget build(BuildContext context) {
+    final isYouTube = campaign.type.toLowerCase().contains('youtube') ||
+        campaign.link.contains('youtube') ||
+        campaign.link.contains('youtu.be');
+    final ytVideoId = isYouTube ? _getYouTubeId(campaign.link) : null;
+
+    final isFacebook = campaign.type.toLowerCase().contains('facebook') ||
+        campaign.link.contains('facebook.com') ||
+        campaign.link.contains('fb.watch') ||
+        campaign.link.contains('fb.gg');
+
+    final stats = (isYouTube || isFacebook) ? _getMockStats(campaign.id) : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Task Details'),
@@ -203,6 +286,225 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (isFacebook) ...[
+              Text(
+                'Facebook Reel Preview',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _isTaskStarted ? null : _startTask,
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.border),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFF1877F2), // Facebook Blue
+                        Color(0xFF0C3D7E), // Darker Facebook Blue
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Opacity(
+                        opacity: 0.15,
+                        child: const Icon(
+                          Icons.video_library_rounded,
+                          size: 120,
+                          color: Colors.white,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Color(0xFF1877F2),
+                          size: 36,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.slideshow_rounded, color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Watch Facebook Reel',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${campaign.stayTime}s Required',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (isYouTube) ...[
+              Text(
+                'Video Preview',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _isTaskStarted ? null : _startTask,
+                child: Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.border),
+                    image: ytVideoId != null
+                        ? DecorationImage(
+                            image: NetworkImage('https://img.youtube.com/vi/$ytVideoId/hqdefault.jpg'),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withOpacity(0.3),
+                              Colors.black.withOpacity(0.7),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.5),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 36,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 16,
+                        left: 16,
+                        right: 16,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.play_circle_fill, color: Colors.red, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Watch on YouTube',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${campaign.stayTime}s Required',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+            if (isFacebook || isYouTube) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildStatItem(Icons.remove_red_eye_outlined, stats!['views']!, 'Views'),
+                    _buildStatDivider(),
+                    _buildStatItem(Icons.thumb_up_outlined, stats['likes']!, 'Likes'),
+                    _buildStatDivider(),
+                    _buildStatItem(Icons.chat_bubble_outline_rounded, stats['comments']!, 'Comments'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             // Details Card
             Container(
               padding: const EdgeInsets.all(20),
