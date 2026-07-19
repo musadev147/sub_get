@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
 import 'package:sub_get/screens/splash_screen.dart';
@@ -13,9 +14,21 @@ import 'package:sub_get/screens/notifications_screen.dart';
 import 'package:sub_get/screens/signup_screen.dart';
 import 'package:sub_get/screens/forgot_password_screen.dart';
 import 'package:sub_get/screens/support_screen.dart';
+import 'package:sub_get/screens/email_verification_screen.dart';
+
+import 'package:sub_get/firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint("Firebase initialization failed: $e");
+  }
   
   // Initialize local DB and preferences state notifier
   final db = MockDatabase();
@@ -47,6 +60,7 @@ class MyApp extends StatelessWidget {
         '/signup': (context) => const SignUpScreen(),
         '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/support': (context) => const SupportScreen(),
+        '/verify_email': (context) => const EmailVerificationScreen(),
       },
     );
   }

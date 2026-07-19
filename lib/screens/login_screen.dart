@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,27 +31,40 @@ class _LoginScreenState extends State<LoginScreen> {
         _isLoading = true;
       });
 
-      // Simulate API response latency
-      await Future.delayed(const Duration(milliseconds: 1000));
-
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
 
-      // Extract mock user name from email
-      final name = email.split('@')[0];
-
-      // Login using mock database
-      await MockDatabase().login(
-        name[0].toUpperCase() + name.substring(1),
-        email,
-        '017XXXXXXXX', // Mock phone
-      );
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        Navigator.pushReplacementNamed(context, '/home');
+      try {
+        final user = await AuthService().signIn(email, password);
+        if (mounted) {
+          if (user != null && !user.emailVerified) {
+            Navigator.pushReplacementNamed(context, '/verify_email');
+          } else {
+            // Populate mock database so NavigationShell works
+            final name = email.split('@')[0];
+            await MockDatabase().login(
+              name[0].toUpperCase() + name.substring(1),
+              email,
+              '017XXXXXXXX',
+            );
+            Navigator.pushReplacementNamed(context, '/home');
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Login failed: ${e.toString()}'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

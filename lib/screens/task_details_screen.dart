@@ -4,6 +4,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
 
+import 'package:sub_get/services/firestore_service.dart';
+
 class TaskDetailsScreen extends StatefulWidget {
   const TaskDetailsScreen({super.key});
 
@@ -175,7 +177,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
     
     // Register task in DB
     setState(() {
-      activeAttempt = MockDatabase().startTask(campaign);
       _isTaskStarted = true;
       _secondsAccumulated = 0;
       _timeLeft = campaign.stayTime;
@@ -187,9 +188,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch campaign link.')),
-        );
+        // Fallback to internal webview if external is not available
+        await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -199,7 +199,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
   }
 
   void _verifyTask() async {
-    if (activeAttempt == null) return;
+    final user = MockDatabase().currentUser;
+    if (user == null) return;
 
     setState(() {
       _isVerifying = true;
@@ -208,7 +209,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
     // Simulate verification delay (checking api completion status)
     await Future.delayed(const Duration(seconds: 2));
 
-    final success = await MockDatabase().completeTask(activeAttempt!.id, _secondsAccumulated);
+    // Save completion to Firebase!
+    final success = await FirestoreService().completeTask(campaign, user.id);
 
     if (!mounted) return;
 
