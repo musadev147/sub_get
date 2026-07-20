@@ -15,6 +15,7 @@ import 'package:sub_get/screens/signup_screen.dart';
 import 'package:sub_get/screens/forgot_password_screen.dart';
 import 'package:sub_get/screens/support_screen.dart';
 import 'package:sub_get/screens/email_verification_screen.dart';
+import 'package:sub_get/services/push_notification_service.dart';
 
 import 'package:sub_get/firebase_options.dart';
 
@@ -26,6 +27,8 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // Initialize Push Notifications
+    await PushNotificationService.initialize();
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
   }
@@ -43,7 +46,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SubGet',
+      title: 'Social Booster',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       initialRoute: '/',

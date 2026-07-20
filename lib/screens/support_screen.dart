@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class SupportScreen extends StatefulWidget {
   const SupportScreen({super.key});
@@ -17,7 +19,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
   final List<Map<String, String>> _faqs = [
     {
-      'question': 'How do I earn coins in SubGet?',
+      'question': 'How do I earn coins in Social Booster?',
       'answer': 'You can earn coins by navigating to the "Work" tab, choosing an active task, and following its instructions exactly. Typically, this involves visiting links, liking posts, or subscribing, and staying on the target page for the requested duration. Once completed, returns to the app to verify and receive coins instantly.',
     },
     {
@@ -45,7 +47,7 @@ class _SupportScreenState extends State<SupportScreen> {
     super.dispose();
   }
 
-  void _showCreateTicketBottomSheet(BuildContext context, MockDatabase db) {
+  void _showCreateTicketBottomSheet(BuildContext context) {
     _subjectController.clear();
     _messageController.clear();
     _selectedCategory = 'Payment';
@@ -158,19 +160,25 @@ class _SupportScreenState extends State<SupportScreen> {
                         ElevatedButton(
                           onPressed: () async {
                             if (_formKey.currentState!.validate()) {
-                              Navigator.pop(context);
-                              await db.createSupportTicket(
-                                _selectedCategory,
-                                _subjectController.text.trim(),
-                                _messageController.text.trim(),
-                              );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Support Ticket submitted successfully!'),
-                                    backgroundColor: AppTheme.secondary,
-                                  ),
+                              final user = await AuthService().getUser();
+                              if (user != null) {
+                                Navigator.pop(context);
+                                await FirestoreService().createSupportTicket(
+                                  user.id,
+                                  user.name,
+                                  user.email,
+                                  _selectedCategory,
+                                  _subjectController.text.trim(),
+                                  _messageController.text.trim(),
                                 );
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Support Ticket submitted successfully!'),
+                                      backgroundColor: AppTheme.secondary,
+                                    ),
+                                  );
+                                }
                               }
                             }
                           },
@@ -206,36 +214,39 @@ class _SupportScreenState extends State<SupportScreen> {
             unselectedLabelColor: AppTheme.textSecondary,
           ),
         ),
-        body: ListenableBuilder(
-          listenable: MockDatabase(),
-          builder: (context, _) {
-            final db = MockDatabase();
-            final user = db.currentUser;
-            if (user == null) return const SizedBox.shrink();
+        body: StreamBuilder<AppUser?>(
+          stream: AuthService().getUserStream(),
+          builder: (context, userSnapshot) {
+            final currentUser = userSnapshot.data;
+            if (currentUser == null) return const Center(child: CircularProgressIndicator());
 
-            // Filter tickets for current user
-            final userTickets = db.tickets.where((t) => t.userId == user.id).toList()
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
+            return StreamBuilder<List<SupportTicket>>(
+              stream: FirestoreService().getUserSupportTickets(currentUser.id),
+          builder: (context, snapshot) {
+            final userTickets = snapshot.data ?? [];
             return TabBarView(
               children: [
                 // Tab 1: FAQ and Direct Channels
                 _buildFaqAndChannelsTab(),
 
                 // Tab 2: User Support Tickets
-                _buildTicketsTab(userTickets, db),
+                _buildTicketsTab(userTickets),
               ],
+
             );
           },
-        ),
+        );
+      },
+    ),
         floatingActionButton: ListenableBuilder(
           listenable: MockDatabase(),
           builder: (context, _) {
-            final db = MockDatabase();
             return FloatingActionButton.extended(
               backgroundColor: AppTheme.primary,
               foregroundColor: Colors.white,
-              onPressed: () => _showCreateTicketBottomSheet(context, db),
+              onPressed: () {
+                _showCreateTicketBottomSheet(context);
+              },
               icon: const Icon(Icons.add),
               label: const Text('Create Ticket'),
             );
@@ -275,11 +286,11 @@ class _SupportScreenState extends State<SupportScreen> {
               child: _buildChannelCard(
                 icon: Icons.chat_bubble_outline,
                 title: 'Telegram Support',
-                value: '@SubGetSupport',
+                value: '@SocialBoosterSupport',
                 color: Colors.blueAccent,
                 onTap: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening Telegram Support: @SubGetSupport')),
+                    const SnackBar(content: Text('Opening Telegram Support: @SocialBoosterSupport')),
                   );
                 },
               ),
@@ -304,11 +315,11 @@ class _SupportScreenState extends State<SupportScreen> {
         _buildChannelCard(
           icon: Icons.email_outlined,
           title: 'Official Support Email',
-          value: 'support@subget.com',
+          value: 'support@socialbooster.com',
           color: AppTheme.accent,
           onTap: () {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Drafting Email to support@subget.com')),
+              const SnackBar(content: Text('Drafting Email to support@socialbooster.com')),
             );
           },
         ),
@@ -324,12 +335,14 @@ class _SupportScreenState extends State<SupportScreen> {
         // FAQ List
         ..._faqs.map((faq) => Container(
               margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
+              child: Material(
                 color: AppTheme.cardBg,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: ExpansionTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: AppTheme.border),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: ExpansionTile(
                 iconColor: AppTheme.primaryLight,
                 collapsedIconColor: AppTheme.textSecondary,
                 title: Text(
@@ -346,7 +359,8 @@ class _SupportScreenState extends State<SupportScreen> {
                   )
                 ],
               ),
-            )),
+            ),
+          )),
         const SizedBox(height: 80), // extra padding for FAB
       ],
     );
@@ -393,7 +407,7 @@ class _SupportScreenState extends State<SupportScreen> {
     );
   }
 
-  Widget _buildTicketsTab(List<SupportTicket> tickets, MockDatabase db) {
+  Widget _buildTicketsTab(List<SupportTicket> tickets) {
     if (tickets.isEmpty) {
       return Center(
         child: Column(
@@ -427,12 +441,14 @@ class _SupportScreenState extends State<SupportScreen> {
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
+          child: Material(
             color: AppTheme.cardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.border),
-          ),
-          child: ExpansionTile(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: const BorderSide(color: AppTheme.border),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: ExpansionTile(
             title: Row(
               children: [
                 Container(
@@ -541,6 +557,7 @@ class _SupportScreenState extends State<SupportScreen> {
               ),
             ],
           ),
+        ),
         );
       },
     );

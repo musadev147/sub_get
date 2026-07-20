@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
+import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 import 'package:sub_get/services/firestore_service.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
@@ -58,7 +60,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         _isLoading = true;
       });
 
-      final db = MockDatabase();
       final title = _titleController.text.trim();
       final link = _linkController.text.trim();
       final reward = int.parse(_rewardController.text.trim());
@@ -69,16 +70,19 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       final cost = reward * workers;
 
       try {
-        if (db.currentUser == null) throw Exception('Not logged in');
+        final user = await AuthService().getUser();
+        if (user == null) throw Exception('Not logged in to Firebase');
+        
+        // Check Admin Status (Assuming 'admin@socialbooster.com' is admin or something, else not admin)
+        bool isAdmin = user.email == 'admin@admin.com'; // Simple mock for now
         
         // Deduct coins if not admin
-        if (!db.isAdmin) {
-          if (db.currentUser!.coin < cost) {
-            throw Exception('Insufficient Coins! Required: $cost, Available: ${db.currentUser!.coin}');
+        if (!isAdmin) {
+          if (user.coin < cost) {
+            throw Exception('Insufficient Coins! Required: $cost, Available: ${user.coin}');
           }
-          // Note: Ideally, this user balance logic should also be moved to Firebase eventually.
-          // For now, we update local mock database balance
-          db.currentUser!.coin -= cost;
+          // Update user balance in Firebase
+          await FirestoreService().deductCoins(user.id, cost);
         }
         
         // Save to Firebase
@@ -90,8 +94,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
           rewardCoin: reward,
           stayTime: stay,
           instruction: instruction,
-          status: db.isAdmin ? 'active' : 'pending',
-          createdBy: db.currentUser!.id,
+          status: isAdmin ? 'active' : 'pending',
+          createdBy: user.id,
           createdAt: DateTime.now(),
           totalWorkers: workers,
         );
@@ -105,7 +109,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
               backgroundColor: AppTheme.secondary,
             ),
           );
-          Navigator.pop(context);
+          Navigator.pop(context); // Go back to campaigns tab
         }
       } catch (e) {
         if (mounted) {

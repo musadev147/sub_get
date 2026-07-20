@@ -5,6 +5,7 @@ import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
 
 import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   const TaskDetailsScreen({super.key});
@@ -44,18 +45,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
     return null;
   }
 
-  Map<String, String> _getMockStats(String id) {
-    final codeSum = id.codeUnits.fold(0, (sum, unit) => sum + unit);
-    final views = ((codeSum * 17) % 850 + 150) * 10;
-    final likes = (views * 0.12).round();
-    final comments = (likes * 0.08).round();
 
-    return {
-      'views': views >= 1000 ? '${(views / 1000).toStringAsFixed(1)}K' : '$views',
-      'likes': likes >= 1000 ? '${(likes / 1000).toStringAsFixed(1)}K' : '$likes',
-      'comments': '$comments',
-    };
-  }
 
   Widget _buildStatItem(IconData icon, String value, String label) {
     return Column(
@@ -92,8 +82,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
   bool _isValidationReady = false;
   bool _isVerifying = false;
   bool _taskFailed = false;
-
-  DateTime? _suspendTime;
+  DateTime? _taskStartTime;
   int _secondsAccumulated = 0;
   Timer? _countdownTimer;
   int _timeLeft = 0;
@@ -120,55 +109,27 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
     super.dispose();
   }
 
-  // Monitor App Lifecycle to track focus duration
+  // Removed buggy AppLifecycleState tracking. 
+  // We will track time absolutely since task start.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!_isTaskStarted || _isValidationReady || _taskFailed) return;
-
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      _suspendTime = DateTime.now();
-      _startCountdown();
-    } else if (state == AppLifecycleState.resumed) {
-      _countdownTimer?.cancel();
-      if (_suspendTime != null) {
-        final durationOut = DateTime.now().difference(_suspendTime!).inSeconds;
-        setState(() {
-          _secondsAccumulated += durationOut;
-          _timeLeft = (campaign.stayTime - _secondsAccumulated).clamp(0, campaign.stayTime);
-        });
-
-        // If returned too early, fail task
-        if (_secondsAccumulated < campaign.stayTime) {
-          setState(() {
-            _taskFailed = true;
-            _isTaskStarted = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed! You returned before completing the required stay time.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        } else {
-          setState(() {
-            _isValidationReady = true;
-          });
-        }
-      }
-    }
+    // No-op
   }
 
   void _startCountdown() {
     _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
-      setState(() {
-        if (_timeLeft > 0) {
-          _timeLeft--;
-        } else {
-          _countdownTimer?.cancel();
-        }
-      });
+      if (_taskStartTime != null) {
+        final elapsed = DateTime.now().difference(_taskStartTime!).inSeconds;
+        setState(() {
+          _timeLeft = (campaign.stayTime - elapsed).clamp(0, campaign.stayTime);
+          if (_timeLeft <= 0) {
+            _isValidationReady = true;
+            _countdownTimer?.cancel();
+          }
+        });
+      }
     });
   }
 
@@ -178,11 +139,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
     // Register task in DB
     setState(() {
       _isTaskStarted = true;
-      _secondsAccumulated = 0;
+      _taskStartTime = DateTime.now();
       _timeLeft = campaign.stayTime;
       _taskFailed = false;
       _isValidationReady = false;
     });
+
+    _startCountdown(); // Start ticking regardless of lifecycle
 
     try {
       if (await canLaunchUrl(uri)) {
@@ -199,8 +162,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
   }
 
   void _verifyTask() async {
-    final user = MockDatabase().currentUser;
-    if (user == null) return;
+    final userId = AuthService().currentUserId;
+    if (userId == null) return;
 
     setState(() {
       _isVerifying = true;
@@ -210,7 +173,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
     await Future.delayed(const Duration(seconds: 2));
 
     // Save completion to Firebase!
-    final success = await FirestoreService().completeTask(campaign, user.id);
+    final success = await FirestoreService().completeTask(campaign, userId);
 
     if (!mounted) return;
 
@@ -277,7 +240,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
         campaign.link.contains('fb.watch') ||
         campaign.link.contains('fb.gg');
 
-    final stats = (isYouTube || isFacebook) ? _getMockStats(campaign.id) : null;
+    final hasStats = (isYouTube || isFacebook) && 
+        (campaign.views != null || campaign.likes != null || campaign.comments != null);
 
     return Scaffold(
       appBar: AppBar(
@@ -486,7 +450,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
               ),
               const SizedBox(height: 24),
             ],
-            if (isFacebook || isYouTube) ...[
+            if (hasStats) ...[
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 decoration: BoxDecoration(
@@ -497,11 +461,17 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatItem(Icons.remove_red_eye_outlined, stats!['views']!, 'Views'),
-                    _buildStatDivider(),
-                    _buildStatItem(Icons.thumb_up_outlined, stats['likes']!, 'Likes'),
-                    _buildStatDivider(),
-                    _buildStatItem(Icons.chat_bubble_outline_rounded, stats['comments']!, 'Comments'),
+                    if (campaign.views != null) ...[
+                      _buildStatItem(Icons.remove_red_eye_outlined, campaign.views!, 'Views'),
+                    ],
+                    if (campaign.views != null && (campaign.likes != null || campaign.comments != null)) _buildStatDivider(),
+                    if (campaign.likes != null) ...[
+                      _buildStatItem(Icons.thumb_up_outlined, campaign.likes!, 'Likes'),
+                    ],
+                    if (campaign.likes != null && campaign.comments != null) _buildStatDivider(),
+                    if (campaign.comments != null) ...[
+                      _buildStatItem(Icons.chat_bubble_outline_rounded, campaign.comments!, 'Comments'),
+                    ],
                   ],
                 ),
               ),

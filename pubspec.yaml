@@ -39,6 +39,9 @@ dependencies:
   firebase_core: ^4.12.1
   firebase_auth: ^6.5.6
   cloud_firestore: ^6.7.1
+  image_picker: ^1.2.3
+  firebase_messaging: ^16.4.3
+  flutter_local_notifications: ^22.1.0
 
 dev_dependencies:
   flutter_test:

@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
+import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 import 'package:sub_get/theme.dart';
 
 class WalletScreen extends StatelessWidget {
@@ -8,18 +11,20 @@ class WalletScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: MockDatabase(),
-      builder: (context, child) {
-        final db = MockDatabase();
-        final user = db.currentUser;
+    return StreamBuilder<AppUser?>(
+      stream: AuthService().getUserStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        final user = snapshot.data;
         if (user == null) return const SizedBox.shrink();
 
         // Calculate today's earn & total earn
         final now = DateTime.now();
         final todayStart = DateTime(now.year, now.month, now.day);
         
-        final userTrans = db.transactions.where((t) => t.userId == user.id);
+        final userTrans = MockDatabase().transactions.where((t) => t.userId == user.id);
 
         final todayEarn = userTrans
             .where((t) => t.type == 'reward' && t.createdAt.isAfter(todayStart))
@@ -28,11 +33,6 @@ class WalletScreen extends StatelessWidget {
         final totalEarn = userTrans
             .where((t) => t.type == 'reward')
             .fold(0, (sum, t) => sum + t.coin);
-
-        // Filter withdraw records
-        final withdrawHistory = userTrans
-            .where((t) => t.type.startsWith('withdraw'))
-            .toList();
 
         return Scaffold(
           appBar: AppBar(
@@ -116,15 +116,53 @@ class WalletScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // Withdraw History Header
-                Text(
-                  'Withdrawal History',
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Withdrawal History',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => Navigator.pushNamed(context, '/withdraw'),
+                      icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                      label: const Text('Withdraw'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 Expanded(
-                  child: withdrawHistory.isEmpty
-                      ? Center(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: FirestoreService().getUserWithdrawals(user.id),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+                      }
+
+                      final withdrawHistory = snapshot.data?.docs ?? [];
+                      
+                      // Sort locally to avoid Firebase index error
+                      withdrawHistory.sort((a, b) {
+                        final aData = a.data() as Map<String, dynamic>;
+                        final bData = b.data() as Map<String, dynamic>;
+                        final aTime = aData['requestedAt'] != null 
+                            ? (aData['requestedAt'] as Timestamp).toDate() 
+                            : DateTime.now();
+                        final bTime = bData['requestedAt'] != null 
+                            ? (bData['requestedAt'] as Timestamp).toDate() 
+                            : DateTime.now();
+                        return bTime.compareTo(aTime); // Descending order
+                      });
+
+                      if (withdrawHistory.isEmpty) {
+                        return Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -133,80 +171,93 @@ class WalletScreen extends StatelessWidget {
                               const Text('No withdrawals requested yet', style: TextStyle(color: AppTheme.textSecondary)),
                             ],
                           ),
-                        )
-                      : ListView.builder(
-                          itemCount: withdrawHistory.length,
-                          itemBuilder: (context, index) {
-                            final tx = withdrawHistory[index];
-                            final isApproved = tx.status == 'approved';
-                            final isPending = tx.status == 'pending';
-                            final statusColor = isApproved
-                                ? AppTheme.secondary
-                                : isPending
-                                    ? AppTheme.accent
-                                    : Colors.redAccent;
+                        );
+                      }
 
-                            return Container(
-                              margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: AppTheme.cardBg,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: AppTheme.border),
-                              ),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    backgroundColor: statusColor.withOpacity(0.1),
-                                    child: Icon(
-                                      isApproved
-                                          ? Icons.check
-                                          : isPending
-                                              ? Icons.hourglass_empty
-                                              : Icons.close,
-                                      color: statusColor,
-                                    ),
+                      return ListView.builder(
+                        itemCount: withdrawHistory.length,
+                        itemBuilder: (context, index) {
+                          final doc = withdrawHistory[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          
+                          final status = data['status'] ?? 'pending';
+                          final method = data['method'] ?? 'Unknown';
+                          final amount = data['amount'] ?? 0;
+                          final createdAt = data['requestedAt'] != null 
+                              ? (data['requestedAt'] as Timestamp).toDate() 
+                              : DateTime.now();
+                          
+                          final isApproved = status == 'approved' || status == 'paid';
+                          final isPending = status == 'pending';
+                          final statusColor = isApproved
+                              ? AppTheme.secondary
+                              : isPending
+                                  ? AppTheme.accent
+                                  : Colors.redAccent;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.cardBg,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppTheme.border),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  backgroundColor: statusColor.withOpacity(0.1),
+                                  child: Icon(
+                                    isApproved
+                                        ? Icons.check
+                                        : isPending
+                                            ? Icons.hourglass_empty
+                                            : Icons.close,
+                                    color: statusColor,
                                   ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Payout: ${tx.withdrawMethod}',
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          DateFormat('dd MMM yyyy, hh:mm a').format(tx.createdAt),
-                                          style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '-${tx.coin} Coins',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent),
+                                        'Payout: $method',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        tx.status.toUpperCase(),
-                                        style: TextStyle(
-                                          color: statusColor,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                        DateFormat('dd MMM yyyy, hh:mm a').format(createdAt),
+                                        style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                                ),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      '-$amount Coins',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      status.toUpperCase(),
+                                      style: TextStyle(
+                                        color: statusColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),

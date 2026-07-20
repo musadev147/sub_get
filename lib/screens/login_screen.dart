@@ -35,20 +35,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final password = _passwordController.text.trim();
 
       try {
-        final user = await AuthService().signIn(email, password);
+        await AuthService().loginWithEmailPassword(email, password);
         if (mounted) {
-          if (user != null && !user.emailVerified) {
-            Navigator.pushReplacementNamed(context, '/verify_email');
-          } else {
-            // Populate mock database so NavigationShell works
-            final name = email.split('@')[0];
-            await MockDatabase().login(
-              name[0].toUpperCase() + name.substring(1),
-              email,
-              '017XXXXXXXX',
-            );
-            Navigator.pushReplacementNamed(context, '/home');
-          }
+          Navigator.pushReplacementNamed(context, '/home');
         }
       } catch (e) {
         if (mounted) {
@@ -104,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               Center(
                 child: Text(
-                  'Welcome to SubGet',
+                  'Welcome to Social Booster',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),

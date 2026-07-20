@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/services/firestore_service.dart';
 
 class AdminPortalScreen extends StatefulWidget {
   const AdminPortalScreen({super.key});
@@ -97,7 +98,19 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                 _buildSettingsTab(context),
 
                 // Tab 4: Support Tickets
-                _buildSupportTab(context, db),
+                StreamBuilder<List<SupportTicket>>(
+                  stream: FirestoreService().getAllSupportTickets(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Error: ${snapshot.error}'));
+                    }
+                    final allTickets = snapshot.data ?? [];
+                    return _buildSupportTab(context, allTickets);
+                  },
+                ),
               ],
             );
           },
@@ -335,11 +348,9 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
     );
   }
 
-  Widget _buildSupportTab(BuildContext context, MockDatabase db) {
-    final pending = db.tickets.where((t) => t.status == 'pending').toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    final resolved = db.tickets.where((t) => t.status == 'resolved').toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  Widget _buildSupportTab(BuildContext context, List<SupportTicket> allTickets) {
+    final pending = allTickets.where((t) => t.status == 'pending').toList();
+    final resolved = allTickets.where((t) => t.status == 'resolved').toList();
 
     if (pending.isEmpty && resolved.isEmpty) {
       return const Center(
@@ -363,7 +374,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.amber),
           ),
           const SizedBox(height: 12),
-          ...pending.map((t) => _buildTicketAdminCard(context, t, db)),
+          ...pending.map((t) => _buildTicketAdminCard(context, t)),
           const SizedBox(height: 24),
         ],
         if (resolved.isNotEmpty) ...[
@@ -372,24 +383,26 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.secondary),
           ),
           const SizedBox(height: 12),
-          ...resolved.map((t) => _buildTicketAdminCard(context, t, db)),
+          ...resolved.map((t) => _buildTicketAdminCard(context, t)),
         ],
       ],
     );
   }
 
-  Widget _buildTicketAdminCard(BuildContext context, SupportTicket ticket, MockDatabase db) {
+  Widget _buildTicketAdminCard(BuildContext context, SupportTicket ticket) {
     final isPending = ticket.status == 'pending';
     final replyController = TextEditingController();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
+      child: Material(
         color: AppTheme.cardBg,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: ExpansionTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: AppTheme.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: ExpansionTile(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -472,9 +485,11 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                             actions: [
                               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                               TextButton(
-                                onPressed: () {
-                                  db.adminDeleteTicket(ticket.id);
-                                  Navigator.pop(context);
+                                onPressed: () async {
+                                  await FirestoreService().adminDeleteTicket(ticket.id);
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                  }
                                 },
                                 child: const Text('Delete', style: TextStyle(color: Colors.redAccent)),
                               ),
@@ -511,7 +526,7 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                                 TextButton(
                                   onPressed: () {
                                     if (replyController.text.trim().isNotEmpty) {
-                                      db.adminReplyTicket(ticket.id, replyController.text.trim());
+                                      FirestoreService().adminReplyTicket(ticket.id, replyController.text.trim());
                                       Navigator.pop(context);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(
@@ -534,8 +549,10 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
               ],
             ),
           ),
-        ],
-      ),
+      ]
+    ),
+      )
     );
-  }
+    }
+
 }

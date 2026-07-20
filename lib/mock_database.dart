@@ -1,17 +1,19 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sub_get/services/firestore_service.dart';
 
 // --- MODELS ---
 
 class AppUser {
   final String id;
-  final String name;
+  String name;
   final String email;
   final String phone;
   int coin;
   String status; // 'active', 'blocked'
   final DateTime createdAt;
+  String? imageBase64;
 
   AppUser({
     required this.id,
@@ -21,6 +23,7 @@ class AppUser {
     required this.coin,
     required this.status,
     required this.createdAt,
+    this.imageBase64,
   });
 
   Map<String, dynamic> toJson() => {
@@ -31,6 +34,7 @@ class AppUser {
         'coin': coin,
         'status': status,
         'createdAt': createdAt.toIso8601String(),
+        'imageBase64': imageBase64,
       };
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
@@ -41,6 +45,7 @@ class AppUser {
         coin: json['coin'],
         status: json['status'],
         createdAt: DateTime.parse(json['createdAt']),
+        imageBase64: json['imageBase64'],
       );
 }
 
@@ -57,6 +62,9 @@ class Campaign {
   final DateTime createdAt;
   final int totalWorkers;
   int completedWorkers;
+  final String? views;
+  final String? likes;
+  final String? comments;
 
   Campaign({
     required this.id,
@@ -71,6 +79,9 @@ class Campaign {
     required this.createdAt,
     required this.totalWorkers,
     this.completedWorkers = 0,
+    this.views,
+    this.likes,
+    this.comments,
   });
 
   Map<String, dynamic> toJson() => {
@@ -86,6 +97,9 @@ class Campaign {
         'createdAt': createdAt.toIso8601String(),
         'totalWorkers': totalWorkers,
         'completedWorkers': completedWorkers,
+        'views': views,
+        'likes': likes,
+        'comments': comments,
       };
 
   factory Campaign.fromJson(Map<String, dynamic> json) => Campaign(
@@ -101,6 +115,9 @@ class Campaign {
         createdAt: DateTime.parse(json['createdAt']),
         totalWorkers: json['totalWorkers'],
         completedWorkers: json['completedWorkers'] ?? 0,
+        views: json['views'],
+        likes: json['likes'],
+        comments: json['comments'],
       );
 }
 
@@ -307,7 +324,7 @@ class MockDatabase extends ChangeNotifier {
   List<SupportTicket> _tickets = [];
 
   // Global Admin Settings
-  int minWithdrawCoins = 1000; 
+  int minWithdrawCoins = 1; 
   int adminGlobalTimer = 20; // Default stay time in seconds
 
   AppUser? get currentUser => _currentUser;
@@ -326,6 +343,12 @@ class MockDatabase extends ChangeNotifier {
     final userStr = prefs.getString('user');
     if (userStr != null) {
       _currentUser = AppUser.fromJson(json.decode(userStr));
+      
+      // Give 20000 coins for testing purposes
+      if (_currentUser!.coin < 20000) {
+        _currentUser!.coin += 20000;
+        _saveUser(); // Save without awaiting to avoid blocking init
+      }
     }
 
     // Load Campaigns
@@ -368,7 +391,7 @@ class MockDatabase extends ChangeNotifier {
     }
 
     // Global settings
-    minWithdrawCoins = prefs.getInt('minWithdrawCoins') ?? 1000;
+    minWithdrawCoins = prefs.getInt('minWithdrawCoins') ?? 1;
     adminGlobalTimer = prefs.getInt('adminGlobalTimer') ?? 20;
 
     notifyListeners();
@@ -542,6 +565,16 @@ class MockDatabase extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateProfile(String newName, String? newImageBase64) async {
+    if (_currentUser == null) return;
+    _currentUser!.name = newName;
+    if (newImageBase64 != null) {
+      _currentUser!.imageBase64 = newImageBase64;
+    }
+    await _saveUser();
+    notifyListeners();
+  }
+
   // --- TASK FLOWS ---
 
   TaskAttempt startTask(Campaign campaign) {
@@ -707,6 +740,20 @@ class MockDatabase extends ChangeNotifier {
 
     _transactions.add(tx);
     await _saveTransactions();
+
+    // Also send the withdrawal request to Firebase
+    try {
+      await FirestoreService().requestWithdrawal(
+        userId: _currentUser!.id,
+        userName: _currentUser!.name,
+        userEmail: _currentUser!.email,
+        amount: coinAmount,
+        method: method,
+        accountDetails: accountDetails,
+      );
+    } catch (e) {
+      debugPrint("Failed to submit withdrawal to Firebase: $e");
+    }
 
     addNotification(
       _currentUser!.id,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/services/auth_service.dart';
 import 'package:sub_get/theme.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -32,7 +33,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     await Future.delayed(const Duration(seconds: 2)); // Smooth branding duration
     
     if (!mounted) return;
-    if (db.currentUser != null) {
+    
+    if (AuthService().currentUserId != null) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {
       Navigator.pushReplacementNamed(context, '/login');
@@ -77,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'SubGet',
+                  'Social Booster',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         letterSpacing: 2,
                         fontWeight: FontWeight.w900,

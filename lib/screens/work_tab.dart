@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
 import 'package:sub_get/theme.dart';
 import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class WorkTab extends StatefulWidget {
   const WorkTab({super.key});
@@ -35,11 +36,14 @@ class _WorkTabState extends State<WorkTab> {
 
   @override
   Widget build(BuildContext context) {
-    final user = MockDatabase().currentUser; // Using Mock for User auth context for now
-    
-    // First StreamBuilder for Completed Task IDs
-    return StreamBuilder<List<String>>(
-      stream: user != null ? _firestoreService.getCompletedTaskIds(user.id) : const Stream.empty(),
+    return StreamBuilder<AppUser?>(
+      stream: AuthService().getUserStream(),
+      builder: (context, userSnapshot) {
+        final user = userSnapshot.data;
+        if (user == null) return const Center(child: CircularProgressIndicator());
+
+        return StreamBuilder<List<String>>(
+          stream: _firestoreService.getCompletedTaskIds(user.id),
       builder: (context, completedSnapshot) {
         final completedTaskIds = completedSnapshot.data ?? [];
 
@@ -280,5 +284,7 @@ class _WorkTabState extends State<WorkTab> {
         );
       },
     );
+  },
+);
   }
 }

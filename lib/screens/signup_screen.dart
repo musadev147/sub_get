@@ -53,9 +53,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final password = _passwordController.text.trim();
 
     try {
-      await AuthService().signUp(email, password);
+      await AuthService().signUpWithEmailPassword(
+        _nameController.text.trim(),
+        email,
+        _phoneController.text.trim(),
+        password,
+      );
       if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/verify_email', (route) => false);
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       }
     } catch (e) {
       if (mounted) {
@@ -92,7 +97,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 10),
               Center(
                 child: Text(
-                  'Join SubGet Today',
+                  'Join Social Booster Today',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
