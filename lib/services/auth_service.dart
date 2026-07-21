@@ -8,6 +8,7 @@ class AppUser {
   final String phone;
   final int coin;
   final String? imageBase64;
+  final String status;
 
   AppUser({
     required this.id,
@@ -16,6 +17,7 @@ class AppUser {
     required this.phone,
     required this.coin,
     this.imageBase64,
+    this.status = 'active',
   });
 
   factory AppUser.fromMap(Map<String, dynamic> data, String documentId) {
@@ -26,6 +28,7 @@ class AppUser {
       phone: data['phone'] ?? '',
       coin: data['coin'] ?? 0,
       imageBase64: data['imageBase64'],
+      status: data['status'] ?? 'active',
     );
   }
 

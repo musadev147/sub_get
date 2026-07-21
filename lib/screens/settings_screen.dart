@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
+import 'package:sub_get/services/auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -20,11 +21,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: ListenableBuilder(
-        listenable: MockDatabase(),
-        builder: (context, _) {
-          final db = MockDatabase();
-          final user = db.currentUser;
+      body: StreamBuilder<AppUser?>(
+        stream: AuthService().getUserStream(),
+        builder: (context, snapshot) {
+          final user = snapshot.data;
           if (user == null) return const SizedBox.shrink();
 
           return ListView(
@@ -69,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       leading: const Icon(Icons.lock_outline, color: AppTheme.primaryLight),
                       title: const Text('Authentication Mode'),
-                      subtitle: const Text('Mock OTP Validation active'),
+                      subtitle: const Text('Firebase Auth active'),
                       trailing: const Icon(Icons.verified, color: AppTheme.primaryLight, size: 20),
                     ),
                   ],
@@ -118,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       activeColor: AppTheme.primaryLight,
                       value: _highPayingOnly,
                       title: const Text('High-Paying Filter'),
-                      subtitle: const Text('Only alert on tasks above 100 coins'),
+                      subtitle: const Text('Only alert on tasks above 100 BTC'),
                       onChanged: (val) {
                         setState(() {
                           _highPayingOnly = val;
@@ -145,7 +145,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'Running on Local Sandbox SQLite/Preferences State Engine',
+                      'Running on Firebase Authentication & Firestore',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: AppTheme.textSecondary, fontSize: 11),
                     ),
