@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class WithdrawScreen extends StatefulWidget {
   const WithdrawScreen({super.key});
@@ -16,8 +18,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   
   String _selectedMethod = 'bKash';
   bool _isLoading = false;
-
-  final List<String> _methods = ['bKash', 'Nagad', 'Rocket', 'Bank'];
+  final List<String> _methods = ['bKash', 'Nagad'];
 
   @override
   void dispose() {
@@ -32,16 +33,25 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
         _isLoading = true;
       });
 
-      final db = MockDatabase();
+      final user = await AuthService().getUser();
+      if (user == null) return;
+
       final amount = int.parse(_amountController.text.trim());
-      final account = _accountController.text.trim();
 
       try {
-        await db.requestWithdraw(
-          coinAmount: amount,
+        await FirestoreService().requestWithdrawal(
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          amount: amount,
           method: _selectedMethod,
-          accountDetails: account,
+          accountDetails: _accountController.text.trim(),
         );
+
+        // Deduct coins
+        await FirebaseFirestore.instance.collection('users').doc(user.id).update({
+          'coin': FieldValue.increment(-amount),
+        });
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -77,12 +87,16 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
       appBar: AppBar(
         title: const Text('Withdraw Coins'),
       ),
-      body: ListenableBuilder(
-        listenable: MockDatabase(),
-        builder: (context, _) {
-          final db = MockDatabase();
-          final user = db.currentUser;
+      body: StreamBuilder<AppUser?>(
+        stream: AuthService().getUserStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final user = snapshot.data;
           if (user == null) return const SizedBox.shrink();
+
+          final int minWithdraw = 1000; // Define your min withdraw logic here
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -122,10 +136,10 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'Minimum Withdraw: ${db.minWithdrawCoins} Coins',
-                            style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                              'Minimum Withdraw: $minWithdraw Coins',
+                              style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -165,7 +179,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                       if (v == null || v.isEmpty) return 'Please enter coins amount';
                       final num = int.tryParse(v);
                       if (num == null) return 'Enter a valid number';
-                      if (num < db.minWithdrawCoins) return 'Below minimum withdraw limit';
+                      if (num < minWithdraw) return 'Below minimum withdraw limit';
                       if (num > user.coin) return 'Insufficient coins balance';
                       return null;
                     },

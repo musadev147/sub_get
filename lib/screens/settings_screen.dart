@@ -140,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Column(
                   children: [
                     Text(
-                      'SubGet App Version v1.0.0',
+                      'Social Booster App Version v1.0.0',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     SizedBox(height: 6),

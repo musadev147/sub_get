@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
+import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
+import 'package:sub_get/services/firestore_service.dart';
 
 class CreateCampaignScreen extends StatefulWidget {
   const CreateCampaignScreen({super.key});
@@ -20,19 +23,15 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     text: '1. Click Start Task to open the link.\n2. Complete the required action.\n3. Stay at least 20 seconds.\n4. Return and claim coins.',
   );
 
-  String _selectedType = 'Facebook Like';
+  String? _selectedType;
   bool _isLoading = false;
+  final FirestoreService _firestoreService = FirestoreService();
 
-  final List<String> _types = [
-    'Facebook Like',
-    'Facebook Comment',
-    'Facebook Share',
-    'Facebook Page Like',
-    'Facebook Video Watch',
-    'YouTube Watch',
-    'YouTube Like',
-    'Website Visit',
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _firestoreService.seedCategoriesIfEmpty();
+  }
 
   @override
   void dispose() {
@@ -47,37 +46,70 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
 
   void _submit() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedType == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select a campaign type'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _isLoading = true;
       });
 
-      final db = MockDatabase();
       final title = _titleController.text.trim();
       final link = _linkController.text.trim();
       final reward = int.parse(_rewardController.text.trim());
       final workers = int.parse(_workersController.text.trim());
       final stay = int.parse(_stayController.text.trim());
       final instruction = _instructionController.text.trim();
+      
+      final cost = reward * workers;
 
       try {
-        await db.createCampaign(
+        final user = await AuthService().getUser();
+        if (user == null) throw Exception('Not logged in to Firebase');
+        
+        // Check Admin Status (Assuming 'admin@socialbooster.com' is admin or something, else not admin)
+        bool isAdmin = user.email == 'admin@admin.com'; // Simple mock for now
+        
+        // Deduct coins if not admin
+        if (!isAdmin) {
+          if (user.coin < cost) {
+            throw Exception('Insufficient Coins! Required: $cost, Available: ${user.coin}');
+          }
+          // Update user balance in Firebase
+          await FirestoreService().deductCoins(user.id, cost);
+        }
+        
+        // Save to Firebase
+        final campaign = Campaign(
+          id: '', // Firestore will auto-generate
           title: title,
           link: link,
-          type: _selectedType,
+          type: _selectedType!,
           rewardCoin: reward,
-          totalWorkers: workers,
           stayTime: stay,
           instruction: instruction,
+          status: isAdmin ? 'active' : 'pending',
+          createdBy: user.id,
+          createdAt: DateTime.now(),
+          totalWorkers: workers,
         );
+
+        await _firestoreService.createCampaign(campaign);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Campaign submitted successfully for Admin review!'),
+              content: Text('Campaign submitted successfully!'),
               backgroundColor: AppTheme.secondary,
             ),
           );
-          Navigator.pop(context);
+          Navigator.pop(context); // Go back to campaigns tab
         }
       } catch (e) {
         if (mounted) {
@@ -111,25 +143,46 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Campaign Type Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedType,
-                decoration: const InputDecoration(
-                  labelText: 'Campaign Type',
-                  prefixIcon: Icon(Icons.category_outlined),
-                ),
-                items: _types.map((type) {
-                  return DropdownMenuItem<String>(
-                    value: type,
-                    child: Text(type),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _selectedType = val;
-                    });
+              // Dynamic Campaign Type Dropdown from Firebase
+              StreamBuilder<List<String>>(
+                stream: _firestoreService.getCategories(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator(color: AppTheme.primaryLight));
                   }
+                  
+                  final types = snapshot.data ?? [];
+                  
+                  // Make sure selectedType is valid
+                  if (_selectedType != null && !types.contains(_selectedType)) {
+                    _selectedType = null;
+                  }
+                  
+                  // Auto-select first item if null and types exist
+                  if (_selectedType == null && types.isNotEmpty) {
+                    _selectedType = types.first;
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedType,
+                    decoration: const InputDecoration(
+                      labelText: 'Campaign Type',
+                      prefixIcon: Icon(Icons.category_outlined),
+                    ),
+                    items: types.map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setState(() {
+                          _selectedType = val;
+                        });
+                      }
+                    },
+                  );
                 },
               ),
               const SizedBox(height: 16),

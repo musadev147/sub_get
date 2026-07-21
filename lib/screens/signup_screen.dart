@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -48,26 +49,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _isLoading = true;
     });
 
-    // Simulate API delay
-    await Future.delayed(const Duration(milliseconds: 1200));
-
-    final name = _nameController.text.trim();
     final email = _emailController.text.trim();
-    final phone = _phoneController.text.trim();
+    final password = _passwordController.text.trim();
 
-    await MockDatabase().login(name, email, phone);
-
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-      Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully! Welcome Gift: +500 coins.'),
-          backgroundColor: AppTheme.secondary,
-        ),
+    try {
+      await AuthService().signUpWithEmailPassword(
+        _nameController.text.trim(),
+        email,
+        _phoneController.text.trim(),
+        password,
       );
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Signup failed: ${e.toString()}'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -88,7 +97,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 10),
               Center(
                 child: Text(
-                  'Join SubGet Today',
+                  'Join Social Booster Today',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),

@@ -1,23 +1,24 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/services/firestore_service.dart';
+
+import '../services/auth_service.dart';
 
 class ProfileTab extends StatelessWidget {
   const ProfileTab({super.key});
 
-  @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: MockDatabase(),
-      builder: (context, child) {
-        final db = MockDatabase();
-        final user = db.currentUser;
+    return StreamBuilder<AppUser?>(
+      stream: AuthService().getUserStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final user = snapshot.data;
         if (user == null) return const SizedBox.shrink();
-
-        // Calculate work counts
-        final myTasks = db.tasks.where((t) => t.workerId == user.id);
-        final completedCount = myTasks.where((t) => t.status == 'completed').length;
-        final pendingCount = myTasks.where((t) => t.status == 'pending').length;
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -34,18 +35,47 @@ class ProfileTab extends StatelessWidget {
                 ),
                 child: Column(
                   children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: AppTheme.primaryLight.withOpacity(0.2),
-                      child: Text(
-                        user.name.substring(0, 1).toUpperCase(),
-                        style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.primaryLight),
-                      ),
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        CircleAvatar(
+                          radius: 40,
+                          backgroundColor: AppTheme.primaryLight.withOpacity(0.2),
+                          backgroundImage: user.imageBase64 != null 
+                              ? MemoryImage(base64Decode(user.imageBase64!))
+                              : null,
+                          child: user.imageBase64 == null ? Text(
+                            user.name.substring(0, 1).toUpperCase(),
+                            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppTheme.primaryLight),
+                          ) : null,
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.cardBg,
+                            shape: BoxShape.circle,
+                          ),
+                          child: InkWell(
+                            onTap: () => _showEditProfileDialog(context, user),
+                            child: const Icon(Icons.edit, size: 20, color: AppTheme.accent),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      user.name,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          user.name,
+                          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(width: 4),
+                        InkWell(
+                          onTap: () => _showEditProfileDialog(context, user),
+                          child: const Icon(Icons.edit, size: 16, color: AppTheme.textSecondary),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -62,28 +92,42 @@ class ProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               // Worker Statistics Row
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      'Completed Work',
-                      '$completedCount',
-                      Icons.check_circle_outline,
-                      AppTheme.secondary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      context,
-                      'Pending Work',
-                      '$pendingCount',
-                      Icons.pending_actions,
-                      AppTheme.accent,
-                    ),
-                  ),
-                ],
+              StreamBuilder<List<String>>(
+                stream: FirestoreService().getCompletedTaskIds(user.id),
+                builder: (context, completedSnapshot) {
+                  return StreamBuilder<List<Campaign>>(
+                    stream: FirestoreService().getActiveCampaigns(),
+                    builder: (context, campaignsSnapshot) {
+                      final completedCount = completedSnapshot.data?.length ?? 0;
+                      final totalActive = campaignsSnapshot.data?.length ?? 0;
+                      final pendingCount = (totalActive - completedCount).clamp(0, 9999);
+
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              'Completed Work',
+                              '$completedCount',
+                              Icons.check_circle_outline,
+                              AppTheme.secondary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildStatCard(
+                              context,
+                              'Pending Work',
+                              '$pendingCount',
+                              Icons.pending_actions,
+                              AppTheme.accent,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
               const SizedBox(height: 24),
               // Menu Options
@@ -107,6 +151,13 @@ class ProfileTab extends StatelessWidget {
                 subtitle: 'Configure details & configurations',
                 icon: Icons.settings_outlined,
                 onTap: () => Navigator.pushNamed(context, '/settings'),
+              ),
+              _buildMenuItem(
+                context,
+                title: 'Support & Help Desk',
+                subtitle: 'FAQ & ask for administrator assistance',
+                icon: Icons.support_agent_outlined,
+                onTap: () => Navigator.pushNamed(context, '/support'),
               ),
               const SizedBox(height: 12),
               // Logout Button
@@ -136,7 +187,7 @@ class ProfileTab extends StatelessWidget {
                           TextButton(
                             onPressed: () async {
                               Navigator.pop(context);
-                              await db.logout();
+                              await AuthService().logout();
                               if (context.mounted) {
                                 Navigator.pushReplacementNamed(context, '/login');
                               }
@@ -201,17 +252,97 @@ class ProfileTab extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.cardBg,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.border),
       ),
-      child: ListTile(
-        onTap: onTap,
-        leading: Icon(icon, color: iconColor, size: 26),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        subtitle: Text(subtitle, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
-        trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 20),
+      child: Material(
+        color: AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(15),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          onTap: onTap,
+          leading: Icon(icon, color: iconColor, size: 26),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          subtitle: Text(subtitle, style: const TextStyle(color: AppTheme.textSecondary, fontSize: 11)),
+          trailing: const Icon(Icons.chevron_right, color: AppTheme.textSecondary, size: 20),
+        ),
       ),
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context, AppUser user) {
+    final nameController = TextEditingController(text: user.name);
+    String? newImageBase64 = user.imageBase64;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: AppTheme.cardBg,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Text('Edit Profile'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      final ImagePicker picker = ImagePicker();
+                      final XFile? image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+                      if (image != null) {
+                        final bytes = await image.readAsBytes();
+                        setState(() {
+                          newImageBase64 = base64Encode(bytes);
+                        });
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 40,
+                      backgroundColor: AppTheme.primaryLight.withOpacity(0.2),
+                      backgroundImage: newImageBase64 != null 
+                          ? MemoryImage(base64Decode(newImageBase64!))
+                          : null,
+                      child: newImageBase64 == null
+                          ? const Icon(Icons.camera_alt, color: AppTheme.primaryLight, size: 30)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('Tap image to change', style: TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (nameController.text.trim().isNotEmpty) {
+                      await AuthService().updateProfile(
+                        nameController.text.trim(),
+                        user.phone,
+                        imageBase64: newImageBase64,
+                      );
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 }
