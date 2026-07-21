@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
 import 'package:sub_get/theme.dart';
+import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -14,30 +16,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    // Mark notifications as read when opening this screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      MockDatabase().markNotificationsRead();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final user = await AuthService().getUser();
+      if (user != null) {
+        FirestoreService().markNotificationsRead(user.id);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: MockDatabase(),
-      builder: (context, _) {
-        final db = MockDatabase();
-        final user = db.currentUser;
+    return StreamBuilder<AppUser?>(
+      stream: AuthService().getUserStream(),
+      builder: (context, userSnapshot) {
+        final user = userSnapshot.data;
         if (user == null) return const SizedBox.shrink();
 
-        final userNotifications = db.notifications
-            .where((n) => n.userId == user.id)
-            .toList();
+        return StreamBuilder<List<AppNotification>>(
+          stream: FirestoreService().getUserNotifications(user.id),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator(color: AppTheme.primaryLight)),
+              );
+            }
+            
+            final userNotifications = snapshot.data ?? [];
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Notifications'),
-          ),
-          body: userNotifications.isEmpty
+            return Scaffold(
+              appBar: AppBar(
+                title: const Text('Notifications'),
+              ),
+              body: userNotifications.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -132,11 +142,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.white30, size: 20),
+                              onPressed: () {
+                                FirestoreService().deleteNotification(notif.id);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+            );
+          },
         );
       },
     );

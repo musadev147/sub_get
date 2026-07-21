@@ -96,6 +96,11 @@ class FirestoreService {
     });
   }
 
+  // Delete a campaign
+  Future<void> deleteCampaign(String campaignId) async {
+    await _db.collection('campaigns').doc(campaignId).delete();
+  }
+
   // Get a stream of user's withdrawal requests
   Stream<QuerySnapshot> getUserWithdrawals(String userId) {
     return _db
@@ -171,6 +176,55 @@ class FirestoreService {
   }
 
 
+
+  // ==========================================
+  // NOTIFICATIONS
+  // ==========================================
+
+  Stream<List<AppNotification>> getUserNotifications(String userId) {
+    return _db
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          final notifs = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return AppNotification(
+              id: doc.id,
+              userId: data['userId'] ?? '',
+              title: data['title'] ?? '',
+              body: data['body'] ?? '',
+              createdAt: data['createdAt'] != null 
+                  ? (data['createdAt'] as Timestamp).toDate() 
+                  : DateTime.now(),
+              isRead: data['isRead'] ?? false,
+            );
+          }).toList();
+          
+          notifs.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return notifs;
+        });
+  }
+
+  Future<void> markNotificationsRead(String userId) async {
+    final unreadNotifs = await _db
+        .collection('notifications')
+        .where('userId', isEqualTo: userId)
+        .where('isRead', isEqualTo: false)
+        .get();
+        
+    if (unreadNotifs.docs.isEmpty) return;
+        
+    final batch = _db.batch();
+    for (var doc in unreadNotifs.docs) {
+      batch.update(doc.reference, {'isRead': true});
+    }
+    await batch.commit();
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    await _db.collection('notifications').doc(notificationId).delete();
+  }
 
   // ==========================================
   // SUPPORT TICKETS
