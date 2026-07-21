@@ -61,7 +61,22 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
       });
 
       final title = _titleController.text.trim();
-      final link = _linkController.text.trim();
+      final linkText = _linkController.text.trim();
+      List<String>? links;
+      String mainLink = linkText;
+
+      if (_selectedType!.toLowerCase().contains('youtube')) {
+        links = linkText.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        if (links.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Please enter at least one valid URL'), backgroundColor: Colors.redAccent),
+          );
+          setState(() { _isLoading = false; });
+          return;
+        }
+        mainLink = links.first; // Fallback to first link for standard link field
+      }
+
       final reward = int.parse(_rewardController.text.trim());
       final workers = int.parse(_workersController.text.trim());
       final stay = int.parse(_stayController.text.trim());
@@ -89,7 +104,8 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         final campaign = Campaign(
           id: '', // Firestore will auto-generate
           title: title,
-          link: link,
+          link: mainLink,
+          links: links,
           type: _selectedType!,
           rewardCoin: reward,
           stayTime: stay,
@@ -201,13 +217,20 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
               TextFormField(
                 controller: _linkController,
                 keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'Campaign Target URL',
-                  hintText: 'https://youtube.com/... or https://facebook.com/...',
-                  prefixIcon: Icon(Icons.link_outlined),
+                maxLines: _selectedType?.toLowerCase().contains('youtube') == true ? 5 : 1,
+                minLines: 1,
+                decoration: InputDecoration(
+                  labelText: _selectedType?.toLowerCase().contains('youtube') == true 
+                      ? 'Campaign Target URLs (One per line)' 
+                      : 'Campaign Target URL',
+                  hintText: _selectedType?.toLowerCase().contains('youtube') == true
+                      ? 'https://youtube.com/...\nhttps://youtube.com/...'
+                      : 'https://facebook.com/...',
+                  prefixIcon: const Icon(Icons.link_outlined),
                 ),
                 validator: (v) {
                   if (v == null || v.isEmpty) return 'Please enter campaign URL';
+                  if (_selectedType?.toLowerCase().contains('youtube') == true) return null; // Let the split logic validate
                   if (!v.startsWith('http://') && !v.startsWith('https://')) {
                     return 'URL must start with http:// or https://';
                   }

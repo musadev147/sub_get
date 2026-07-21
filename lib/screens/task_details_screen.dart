@@ -6,6 +6,7 @@ import 'package:sub_get/theme.dart';
 
 import 'package:sub_get/services/firestore_service.dart';
 import 'package:sub_get/services/auth_service.dart';
+import 'package:sub_get/screens/webview_task_screen.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   const TaskDetailsScreen({super.key});
@@ -134,30 +135,15 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> with WidgetsBindi
   }
 
   Future<void> _startTask() async {
-    final uri = Uri.parse(campaign.link);
-    
-    // Register task in DB
-    setState(() {
-      _isTaskStarted = true;
-      _taskStartTime = DateTime.now();
-      _timeLeft = campaign.stayTime;
-      _taskFailed = false;
-      _isValidationReady = false;
-    });
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WebviewTaskScreen(campaign: campaign),
+      ),
+    );
 
-    _startCountdown(); // Start ticking regardless of lifecycle
-
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // Fallback to internal webview if external is not available
-        await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error launching link: $e')),
-      );
+    if (result == true && mounted) {
+      Navigator.pop(context); // Return to work tab if task was completed successfully
     }
   }
 
