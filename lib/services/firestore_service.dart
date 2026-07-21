@@ -31,6 +31,7 @@ class FirestoreService {
           views: data['views'] as String?,
           likes: data['likes'] as String?,
           comments: data['comments'] as String?,
+          links: data['links'] != null ? List<String>.from(data['links']) : null,
         );
       }).toList();
     });
@@ -63,6 +64,7 @@ class FirestoreService {
           views: data['views'] as String?,
           likes: data['likes'] as String?,
           comments: data['comments'] as String?,
+          links: data['links'] != null ? List<String>.from(data['links']) : null,
         );
       }).toList();
     });
@@ -93,6 +95,7 @@ class FirestoreService {
       'views': campaign.views,
       'likes': campaign.likes,
       'comments': campaign.comments,
+      'links': campaign.links,
     });
   }
 

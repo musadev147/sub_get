@@ -65,6 +65,7 @@ class Campaign {
   final String? views;
   final String? likes;
   final String? comments;
+  final List<String>? links;
 
   Campaign({
     required this.id,
@@ -82,6 +83,7 @@ class Campaign {
     this.views,
     this.likes,
     this.comments,
+    this.links,
   });
 
   Map<String, dynamic> toJson() => {
@@ -100,6 +102,7 @@ class Campaign {
         'views': views,
         'likes': likes,
         'comments': comments,
+        'links': links,
       };
 
   factory Campaign.fromJson(Map<String, dynamic> json) => Campaign(
@@ -118,6 +121,7 @@ class Campaign {
         views: json['views'],
         likes: json['likes'],
         comments: json['comments'],
+        links: json['links'] != null ? List<String>.from(json['links']) : null,
       );
 }
 
