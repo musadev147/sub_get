@@ -4,6 +4,7 @@ import 'package:sub_get/theme.dart';
 import 'package:sub_get/screens/work_tab.dart';
 import 'package:sub_get/screens/campaign_tab.dart';
 import 'package:sub_get/screens/profile_tab.dart';
+import 'package:sub_get/screens/wallet_screen.dart';
 import 'package:sub_get/services/auth_service.dart';
 
 class NavigationShell extends StatefulWidget {
@@ -19,6 +20,7 @@ class _NavigationShellState extends State<NavigationShell> {
   final List<Widget> _tabs = const [
     WorkTab(),
     CampaignTab(),
+    WalletScreen(),
     ProfileTab(),
   ];
 
@@ -134,32 +136,8 @@ class _NavigationShellState extends State<NavigationShell> {
                 ],
               ),
               actions: [
-                // Coin Balance Display
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.accentGradient,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                          Icons.monetization_on, color: Colors.white, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${user.coin}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 4),
+                // Coin Balance Display Removed
+
                 // Notifications bell
                 Stack(
                   alignment: Alignment.center,
@@ -233,6 +211,8 @@ class _NavigationShellState extends State<NavigationShell> {
                           backgroundColor: AppTheme.secondary,
                         ),
                       );
+                    } else if (value == 'support') {
+                      Navigator.pushNamed(context, '/support');
                     }
                   },
                   itemBuilder: (context) =>
@@ -248,6 +228,10 @@ class _NavigationShellState extends State<NavigationShell> {
                     const PopupMenuItem(
                       value: 'share',
                       child: Text('Share App'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'support',
+                      child: Text('Support'),
                     ),
                   ],
                 ),
@@ -275,6 +259,11 @@ class _NavigationShellState extends State<NavigationShell> {
                   icon: Icon(Icons.campaign_outlined),
                   activeIcon: Icon(Icons.campaign),
                   label: 'Campaign',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.account_balance_wallet_outlined),
+                  activeIcon: Icon(Icons.account_balance_wallet),
+                  label: 'Wallet',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.person_outline),

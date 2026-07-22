@@ -43,6 +43,20 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
               setState(() {
                 _isLoading = false;
               });
+              // Auto-click "Click more" or similar buttons when the page loads
+              _controller.runJavaScript('''
+                setTimeout(function() {
+                  try {
+                    var buttons = document.querySelectorAll('button, div[role="button"], a');
+                    for (var i = 0; i < buttons.length; i++) {
+                      var text = (buttons[i].innerText || buttons[i].textContent || '').toLowerCase();
+                      if (text.includes('click more') || text.trim() === 'more' || text.trim() === 'show more' || text.trim() === 'read more') {
+                        buttons[i].click();
+                      }
+                    }
+                  } catch(e) {}
+                }, 2000);
+              ''');
             }
           },
         ),
@@ -92,14 +106,32 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
         });
       } else {
         _timer?.cancel();
-        if (_currentIndex < _playlist.length - 1) {
-          // Load next video in playlist
-          _currentIndex++;
-          _loadCurrentVideo();
-        } else if (!_completed) {
-          // Finished entire playlist
-          _completeTask();
-        }
+        
+        // Auto-click subscribe button in the webview when time is up
+        _controller.runJavaScript('''
+          try {
+            var subBtn = document.querySelector('ytm-subscribe-button-renderer button') || 
+                         document.querySelector('.yt-spec-button-shape-next--filled') || 
+                         document.querySelector('[aria-label*="Subscribe"]') ||
+                         document.querySelector('ytd-subscribe-button-renderer button');
+            if (subBtn) {
+              subBtn.click();
+            }
+          } catch(e) {}
+        ''');
+
+        // Wait a little bit for the subscribe action to register before completing or navigating
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!mounted) return;
+          if (_currentIndex < _playlist.length - 1) {
+            // Load next video in playlist
+            _currentIndex++;
+            _loadCurrentVideo();
+          } else if (!_completed) {
+            // Finished entire playlist
+            _completeTask();
+          }
+        });
       }
     });
   }
@@ -314,13 +346,15 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                             ),
                           ),
                           const Spacer(),
-                          const Icon(Icons.volume_up, color: Colors.redAccent, size: 20),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'SUBSCRIBE',
-                            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
-                          ),
-                          const SizedBox(width: 12),
+                          if (currentUrl.contains('youtube.com') || currentUrl.contains('youtu.be')) ...[
+                            Icon(Icons.volume_up, color: _timeLeft == 0 ? Colors.green : Colors.redAccent, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              _timeLeft == 0 ? 'SUBSCRIBED' : 'SUBSCRIBE',
+                              style: TextStyle(color: _timeLeft == 0 ? Colors.green : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+                            ),
+                            const SizedBox(width: 12),
+                          ],
                           const Icon(Icons.monetization_on, color: Colors.amber, size: 20),
                           const SizedBox(width: 4),
                           Text(
