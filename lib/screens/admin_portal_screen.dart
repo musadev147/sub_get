@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sub_get/mock_database.dart';
+import 'package:sub_get/mock_database.dart' hide AppUser;
 import 'package:sub_get/theme.dart';
 import 'package:sub_get/services/firestore_service.dart';
+import 'package:sub_get/services/auth_service.dart';
 
 class AdminPortalScreen extends StatefulWidget {
   const AdminPortalScreen({super.key});
@@ -165,9 +166,46 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
                       style: const TextStyle(color: AppTheme.primaryLight, fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
-                  Text(
-                    'Creator ID: ${camp.createdBy}',
-                    style: const TextStyle(color: AppTheme.textSecondary, fontSize: 10),
+                  FutureBuilder<AppUser?>(
+                    future: AuthService().getUserById(camp.createdBy),
+                    builder: (context, snapshot) {
+                      String emailText = 'Loading...';
+                      String actualEmail = 'Unknown';
+                      
+                      if (snapshot.hasData && snapshot.data != null) {
+                        actualEmail = snapshot.data!.email;
+                        emailText = 'By: $actualEmail';
+                      } else if (snapshot.hasError || snapshot.connectionState == ConnectionState.done) {
+                        emailText = 'ID: ${camp.createdBy}';
+                      }
+
+                      return InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AdminUserCampaignsScreen(
+                                userId: camp.createdBy,
+                                userEmail: actualEmail,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Text(
+                            emailText,
+                            style: const TextStyle(
+                              color: AppTheme.accent, 
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                              decorationColor: AppTheme.accent,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -554,5 +592,77 @@ class _AdminPortalScreenState extends State<AdminPortalScreen> {
       )
     );
     }
+}
 
+class AdminUserCampaignsScreen extends StatelessWidget {
+  final String userId;
+  final String userEmail;
+
+  const AdminUserCampaignsScreen({
+    super.key,
+    required this.userId,
+    required this.userEmail,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Campaigns: $userEmail'),
+      ),
+      body: StreamBuilder<List<Campaign>>(
+        stream: FirestoreService().getUserCampaigns(userId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
+          }
+          
+          final campaigns = snapshot.data ?? [];
+          if (campaigns.isEmpty) {
+            return const Center(child: Text('No campaigns found for this user.', style: TextStyle(color: AppTheme.textSecondary)));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: campaigns.length,
+            itemBuilder: (context, index) {
+              final camp = campaigns[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(camp.type, style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryLight)),
+                        Text('Status: ${camp.status.toUpperCase()}', style: TextStyle(
+                          color: camp.status == 'active' ? Colors.green : (camp.status == 'pending' ? Colors.amber : Colors.red),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        )),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(camp.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text('Reward: ${camp.rewardCoin} Coins | Stay: ${camp.stayTime}s', style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12)),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
 }
