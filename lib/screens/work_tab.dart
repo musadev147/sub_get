@@ -3,6 +3,7 @@ import 'package:sub_get/mock_database.dart' hide AppUser;
 import 'package:sub_get/theme.dart';
 import 'package:sub_get/services/firestore_service.dart';
 import 'package:sub_get/services/auth_service.dart';
+import 'package:sub_get/screens/webview_task_screen.dart';
 
 class CategoryItem {
   final String name;
@@ -292,6 +293,30 @@ class _WorkTabState extends State<WorkTab> {
               '$_selectedFilter Works',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const Spacer(),
+            if (activeCampaigns.isNotEmpty)
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WebviewTaskScreen(
+                        campaign: activeCampaigns[0],
+                        autoPlayCampaigns: activeCampaigns,
+                        autoPlayIndex: 0,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.play_arrow, size: 20),
+                label: const Text('Auto Work', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.secondary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),

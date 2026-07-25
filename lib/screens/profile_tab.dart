@@ -131,13 +131,7 @@ class ProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               // Menu Options
-              _buildMenuItem(
-                context,
-                title: 'Coin Wallet',
-                subtitle: 'Check transactions & daily earn logs',
-                icon: Icons.account_balance_wallet_outlined,
-                onTap: () => Navigator.pushNamed(context, '/wallet'),
-              ),
+
               _buildMenuItem(
                 context,
                 title: 'Notifications',

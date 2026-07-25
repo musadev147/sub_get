@@ -18,7 +18,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   
   String _selectedMethod = 'bKash';
   bool _isLoading = false;
-  final List<String> _methods = ['bKash', 'Nagad'];
+  final List<String> _methods = ['bKash', 'Nagad', 'BTC', 'USDT'];
 
   @override
   void dispose() {
@@ -85,7 +85,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Withdraw Coins'),
+        title: const Text('Withdraw BTC'),
       ),
       body: StreamBuilder<AppUser?>(
         stream: AuthService().getUserStream(),
@@ -123,7 +123,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             const Icon(Icons.monetization_on, color: AppTheme.accent, size: 26),
                             const SizedBox(width: 6),
                             Text(
-                              '${user.coin} Coins',
+                              '${user.coin} BTC',
                               style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppTheme.accent),
                             ),
                           ],
@@ -136,7 +136,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                              'Minimum Withdraw: $minWithdraw Coins',
+                              'Minimum Withdraw: $minWithdraw BTC',
                               style: const TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                             ),
                           ),
@@ -171,16 +171,16 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                     controller: _amountController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Amount of Coins',
+                      labelText: 'Amount of BTC',
                       hintText: 'e.g. 1000',
                       prefixIcon: Icon(Icons.monetization_on_outlined),
                     ),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return 'Please enter coins amount';
+                      if (v == null || v.isEmpty) return 'Please enter BTC amount';
                       final num = int.tryParse(v);
                       if (num == null) return 'Enter a valid number';
                       if (num < minWithdraw) return 'Below minimum withdraw limit';
-                      if (num > user.coin) return 'Insufficient coins balance';
+                      if (num > user.coin) return 'Insufficient BTC balance';
                       return null;
                     },
                   ),
@@ -189,11 +189,15 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
                   TextFormField(
                     controller: _accountController,
                     decoration: InputDecoration(
-                      labelText: _selectedMethod == 'Bank' ? 'Bank Account Details' : 'Mobile Account Number',
-                      hintText: _selectedMethod == 'Bank'
-                          ? 'Bank Name, Branch, A/C: 123-456...'
+                      labelText: _selectedMethod == 'BTC' || _selectedMethod == 'USDT' 
+                          ? '$_selectedMethod Wallet Address' 
+                          : 'Mobile Account Number',
+                      hintText: _selectedMethod == 'BTC' || _selectedMethod == 'USDT'
+                          ? 'Enter $_selectedMethod wallet address'
                           : '01XXXXXXXXX',
-                      prefixIcon: const Icon(Icons.phone_iphone_outlined),
+                      prefixIcon: Icon(_selectedMethod == 'BTC' || _selectedMethod == 'USDT'
+                          ? Icons.qr_code_scanner
+                          : Icons.phone_iphone_outlined),
                     ),
                     validator: (v) => v == null || v.isEmpty ? 'Account details are required' : null,
                   ),

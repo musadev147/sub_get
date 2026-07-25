@@ -38,8 +38,6 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
     _titleController.dispose();
     _linkController.dispose();
     _rewardController.dispose();
-    _workersController.dispose();
-    _stayController.dispose();
     _instructionController.dispose();
     super.dispose();
   }
@@ -167,7 +165,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
                     return const Center(child: CircularProgressIndicator(color: AppTheme.primaryLight));
                   }
                   
-                  final types = snapshot.data ?? [];
+                  final types = (snapshot.data ?? []).toSet().toList();
                   
                   // Make sure selectedType is valid
                   if (_selectedType != null && !types.contains(_selectedType)) {

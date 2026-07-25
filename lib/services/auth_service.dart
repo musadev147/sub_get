@@ -74,6 +74,15 @@ class AuthService {
     return null;
   }
 
+  // Get user by arbitrary ID
+  Future<AppUser?> getUserById(String uid) async {
+    final doc = await _db.collection('users').doc(uid).get();
+    if (doc.exists && doc.data() != null) {
+      return AppUser.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+    }
+    return null;
+  }
+
   // Sign up
   Future<AppUser?> signUpWithEmailPassword(String name, String email, String phone, String password) async {
     try {

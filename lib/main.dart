@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:sub_get/mock_database.dart';
 import 'package:sub_get/theme.dart';
 import 'package:sub_get/screens/splash_screen.dart';
@@ -32,6 +33,9 @@ void main() async {
   } catch (e) {
     debugPrint("Firebase initialization failed: $e");
   }
+  
+  // Initialize Mobile Ads
+  await MobileAds.instance.initialize();
   
   // Initialize local DB and preferences state notifier
   final db = MockDatabase();
