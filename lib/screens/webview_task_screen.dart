@@ -148,10 +148,20 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
     );
   }
 
+  void _advanceOrCompleteTask() {
+    if (!mounted) return;
+    if (_currentIndex < _playlist.length - 1) {
+      _currentIndex++;
+      _loadCurrentVideo();
+    } else if (!_completed) {
+      _completeTask();
+    }
+  }
+
   void _showRewardedAdAndComplete() {
     if (_rewardedAd == null) {
       debugPrint('Ad not ready yet. Completing task normally.');
-      _completeTask();
+      _advanceOrCompleteTask();
       return;
     }
     
@@ -165,7 +175,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
         _rewardedAd = null;
         _loadRewardedAd(); // Load the next one
         if (earnedReward) {
-          _completeTask();
+          _advanceOrCompleteTask();
         } else {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -179,7 +189,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
       onAdFailedToShowFullScreenContent: (ad, error) {
         ad.dispose();
         _rewardedAd = null;
-        _completeTask();
+        _advanceOrCompleteTask();
       },
     );
     
@@ -233,31 +243,44 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
       } else {
         _timer?.cancel();
         
-        // Auto-click subscribe button in the webview when time is up
-        _controller.runJavaScript('''
-          try {
-            var subBtn = document.querySelector('ytm-subscribe-button-renderer button') || 
-                         document.querySelector('.yt-spec-button-shape-next--filled') || 
-                         document.querySelector('[aria-label*="Subscribe"]') ||
-                         document.querySelector('ytd-subscribe-button-renderer button');
-            if (subBtn) {
-              subBtn.click();
-            }
-          } catch(e) {}
-        ''');
+        String currentUrl = _playlist[_currentIndex];
+        bool isYoutube = currentUrl.contains('youtube.com') || currentUrl.contains('youtu.be');
+        
+        if (isYoutube) {
+          // Auto-click subscribe and like button in the webview when time is up
+          _controller.runJavaScript('''
+            try {
+              // Subscribe
+              var subBtn = document.querySelector('ytm-subscribe-button-renderer button') || 
+                           document.querySelector('.yt-spec-button-shape-next--filled') || 
+                           document.querySelector('[aria-label*="Subscribe"]') ||
+                           document.querySelector('ytd-subscribe-button-renderer button');
+              if (subBtn) {
+                subBtn.click();
+              }
+              
+              // Like
+              var likeBtn = document.querySelector('like-button-view-model button') ||
+                            document.querySelector('ytm-segmented-like-dislike-button-renderer button') ||
+                            document.querySelector('ytd-menu-renderer ytd-toggle-button-renderer button') ||
+                            document.querySelector('button[aria-label^="Like this video" i]') ||
+                            document.querySelector('button[aria-label*="Like" i]');
+              if (likeBtn && likeBtn.getAttribute('aria-pressed') !== 'true') {
+                likeBtn.click();
+              }
+            } catch(e) {}
+          ''');
 
-        // Wait a little bit for the subscribe action to register before completing or navigating
-        Future.delayed(const Duration(seconds: 2), () {
-          if (!mounted) return;
-          if (_currentIndex < _playlist.length - 1) {
-            // Load next video in playlist
-            _currentIndex++;
-            _loadCurrentVideo();
-          } else if (!_completed) {
-            // Finished entire playlist
-            _completeTask();
+          // Wait a little bit for the subscribe action to register before completing or navigating
+          Future.delayed(const Duration(seconds: 2), () {
+            _advanceOrCompleteTask();
+          });
+        } else {
+          // Website task time is up, wait for user to click "See More" button
+          if (mounted) {
+            setState(() {});
           }
-        });
+        }
       }
     });
   }
@@ -445,7 +468,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                           ),
                         ),
                       ),
-                    if (!(currentUrl.contains('youtube.com') || currentUrl.contains('youtu.be')))
+                    if (!(currentUrl.contains('youtube.com') || currentUrl.contains('youtu.be')) && _timeLeft == 0)
                       Positioned(
                         bottom: 24,
                         right: 24,
@@ -516,11 +539,11 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                           ),
                           const Spacer(),
                           if (currentUrl.contains('youtube.com') || currentUrl.contains('youtu.be')) ...[
-                            Icon(Icons.volume_up, color: _timeLeft == 0 ? Colors.green : Colors.redAccent, size: 20),
+                            Icon(Icons.thumb_up_alt_outlined, color: _timeLeft == 0 ? Colors.green : Colors.redAccent, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              _timeLeft == 0 ? 'SUBSCRIBED' : 'SUBSCRIBE',
-                              style: TextStyle(color: _timeLeft == 0 ? Colors.green : Colors.black, fontWeight: FontWeight.w600, fontSize: 14),
+                              _timeLeft == 0 ? 'LIKED & SUBSCRIBED' : 'LIKE & SUBSCRIBE',
+                              style: TextStyle(color: _timeLeft == 0 ? Colors.green : Colors.black, fontWeight: FontWeight.w600, fontSize: 13),
                             ),
                             const SizedBox(width: 12),
                           ],
