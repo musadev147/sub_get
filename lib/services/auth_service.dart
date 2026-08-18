@@ -21,12 +21,18 @@ class AppUser {
   });
 
   factory AppUser.fromMap(Map<String, dynamic> data, String documentId) {
+    int parseCoin(dynamic val) {
+      if (val == null) return 0;
+      if (val is num) return val.toInt();
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
+    }
     return AppUser(
       id: documentId,
       name: data['name'] ?? '',
       email: data['email'] ?? '',
       phone: data['phone'] ?? '',
-      coin: data['coin'] ?? 0,
+      coin: parseCoin(data['coin']),
       imageBase64: data['imageBase64'],
       status: data['status'] ?? 'active',
     );
@@ -94,7 +100,7 @@ class AuthService {
           name: name,
           email: email,
           phone: phone,
-          coin: 15500, // Initial coins
+          coin: 500, // Initial coins
         );
 
         await _db.collection('users').doc(credential.user!.uid).set(newUser.toMap());

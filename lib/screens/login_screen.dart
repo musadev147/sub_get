@@ -66,6 +66,12 @@ class _LoginScreenState extends State<LoginScreen> {
     _login();
   }
 
+  void _quickAdminLogin() {
+    _emailController.text = 'admin@admin.com';
+    _passwordController.text = 'admin123456';
+    _login();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -192,9 +198,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
               const SizedBox(height: 32),
               const Row(
                 children: [
@@ -210,13 +216,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               const SizedBox(height: 20),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-                onPressed: _isLoading ? null : _quickUserLogin,
-                child: const Text('Demo Login'),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: _isLoading ? null : _quickUserLogin,
+                      child: const Text('Demo User'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppTheme.primaryLight),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      onPressed: _isLoading ? null : _quickAdminLogin,
+                      child: const Text('Demo Admin', style: TextStyle(color: AppTheme.primaryLight)),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

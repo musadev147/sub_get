@@ -12,6 +12,6 @@ void main() {
     await tester.pumpWidget(const MyApp());
 
     // Verify that our title is shown.
-    expect(find.text('SubGet'), findsOneWidget);
+    expect(find.text('Social Booster'), findsOneWidget);
   });
 }

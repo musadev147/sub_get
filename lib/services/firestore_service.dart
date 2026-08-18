@@ -6,6 +6,12 @@ class FirestoreService {
 
   // Get a stream of active campaigns
   Stream<List<Campaign>> getActiveCampaigns() {
+    int parseInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is num) return val.toInt();
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
+    }
     return _db
         .collection('campaigns')
         .where('status', isEqualTo: 'active')
@@ -18,16 +24,16 @@ class FirestoreService {
           title: data['title'] ?? '',
           link: data['link'] ?? '',
           type: data['type'] ?? '',
-          rewardCoin: data['rewardCoin'] ?? 0,
-          stayTime: data['stayTime'] ?? 0,
+          rewardCoin: parseInt(data['rewardCoin']),
+          stayTime: parseInt(data['stayTime']),
           instruction: data['instruction'] ?? '',
           status: data['status'] ?? 'active',
           createdBy: data['createdBy'] ?? '',
           createdAt: data['createdAt'] != null 
               ? (data['createdAt'] as Timestamp).toDate() 
               : DateTime.now(),
-          totalWorkers: data['totalWorkers'] ?? 0,
-          completedWorkers: data['completedWorkers'] ?? 0,
+          totalWorkers: parseInt(data['totalWorkers']),
+          completedWorkers: parseInt(data['completedWorkers']),
           views: data['views'] as String?,
           likes: data['likes'] as String?,
           comments: data['comments'] as String?,
@@ -39,6 +45,12 @@ class FirestoreService {
 
   // Get a stream of campaigns created by a specific user
   Stream<List<Campaign>> getUserCampaigns(String userId) {
+    int parseInt(dynamic val) {
+      if (val == null) return 0;
+      if (val is num) return val.toInt();
+      if (val is String) return int.tryParse(val) ?? 0;
+      return 0;
+    }
     return _db
         .collection('campaigns')
         .where('createdBy', isEqualTo: userId)
@@ -51,16 +63,16 @@ class FirestoreService {
           title: data['title'] ?? '',
           link: data['link'] ?? '',
           type: data['type'] ?? '',
-          rewardCoin: data['rewardCoin'] ?? 0,
-          stayTime: data['stayTime'] ?? 0,
+          rewardCoin: parseInt(data['rewardCoin']),
+          stayTime: parseInt(data['stayTime']),
           instruction: data['instruction'] ?? '',
           status: data['status'] ?? 'pending',
           createdBy: data['createdBy'] ?? '',
           createdAt: data['createdAt'] != null 
               ? (data['createdAt'] as Timestamp).toDate() 
               : DateTime.now(),
-          totalWorkers: data['totalWorkers'] ?? 0,
-          completedWorkers: data['completedWorkers'] ?? 0,
+          totalWorkers: parseInt(data['totalWorkers']),
+          completedWorkers: parseInt(data['completedWorkers']),
           views: data['views'] as String?,
           likes: data['likes'] as String?,
           comments: data['comments'] as String?,
