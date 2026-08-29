@@ -1,37 +1,26 @@
 {
   "project_info": {
-    "project_number": "305458294050",
-    "firebase_url": "https://social-booster-6e260-default-rtdb.firebaseio.com",
-    "project_id": "social-booster-6e260",
-    "storage_bucket": "social-booster-6e260.firebasestorage.app"
+    "project_number": "1063417017005",
+    "project_id": "earn-cash-home",
+    "storage_bucket": "earn-cash-home.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:305458294050:android:810dcc305be7ed7917c97b",
+        "mobilesdk_app_id": "1:1063417017005:android:6f458d42d2055607a4cc24",
         "android_client_info": {
-          "package_name": "com.example.sub_get"
+          "package_name": "musadev.earn_cash_home"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "305458294050-6jbeotr085jl0llnihf2m8hinh82stqb.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAVSctorGr5R8rUwHpOcx7epWoSSvTg7cU"
+          "current_key": "AIzaSyDM0pqboKFmML3RMwM_VNmu2jbhuxu4Ykk"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "305458294050-6jbeotr085jl0llnihf2m8hinh82stqb.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

@@ -1,4 +1,4 @@
-package com.example.sub_get
+package musadev.earn_cash_home
 
 import io.flutter.embedding.android.FlutterActivity
 

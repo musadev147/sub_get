@@ -41,10 +41,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAVSctorGr5R8rUwHpOcx7epWoSSvTg7cU',
-    appId: '1:305458294050:android:810dcc305be7ed7917c97b',
-    messagingSenderId: '305458294050',
-    projectId: 'social-booster-6e260',
-    storageBucket: 'social-booster-6e260.firebasestorage.app',
+    apiKey: 'AIzaSyDM0pqboKFmML3RMwM_VNmu2jbhuxu4Ykk',
+    appId: '1:1063417017005:android:6f458d42d2055607a4cc24',
+    messagingSenderId: '1063417017005',
+    projectId: 'earn-cash-home',
+    storageBucket: 'earn-cash-home.firebasestorage.app',
   );
 }

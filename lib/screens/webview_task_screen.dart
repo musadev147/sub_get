@@ -135,7 +135,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
   void _loadBannerAd() {
     _bannerAd?.dispose();
     _bannerAd = BannerAd(
-      // TODO: Replace with your real Ad Unit ID before Play Store release
+      // Google AdMob Test Ad Unit ID for Android Banner Ad
       adUnitId: 'ca-app-pub-3940256099942544/6300978111',
       size: AdSize.mediumRectangle,
       request: const AdRequest(),

@@ -17,7 +17,7 @@ import 'package:sub_get/screens/forgot_password_screen.dart';
 import 'package:sub_get/screens/support_screen.dart';
 import 'package:sub_get/screens/email_verification_screen.dart';
 import 'package:sub_get/services/push_notification_service.dart';
-
+import 'package:sub_get/screens/privacy_policy_screen.dart';
 import 'package:sub_get/firebase_options.dart';
 
 void main() async {
@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Social Booster',
+      title: 'Earn Cash Home',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       initialRoute: '/',
@@ -68,6 +68,7 @@ class MyApp extends StatelessWidget {
         '/forgot_password': (context) => const ForgotPasswordScreen(),
         '/support': (context) => const SupportScreen(),
         '/verify_email': (context) => const EmailVerificationScreen(),
+        '/privacy_policy': (context) => const PrivacyPolicyScreen(),
       },
     );
   }

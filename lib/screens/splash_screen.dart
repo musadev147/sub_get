@@ -79,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Social Booster',
+                  'Earn Cash Home',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                         letterSpacing: 2,
                         fontWeight: FontWeight.w900,

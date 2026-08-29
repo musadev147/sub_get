@@ -97,7 +97,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 10),
               Center(
                 child: Text(
-                  'Join Social Booster Today',
+                  'Join Earn Cash Home Today',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -226,10 +226,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                     activeColor: AppTheme.primary,
                   ),
-                  const Expanded(
-                    child: Text(
-                      'I agree to the Terms of Service & Privacy Policy',
-                      style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/privacy_policy');
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                        child: RichText(
+                          text: const TextSpan(
+                            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontFamily: 'Outfit'),
+                            children: [
+                              TextSpan(text: 'I agree to the Terms of Service & '),
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                style: TextStyle(
+                                  color: AppTheme.primaryLight,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

@@ -153,6 +153,13 @@ class ProfileTab extends StatelessWidget {
                 icon: Icons.support_agent_outlined,
                 onTap: () => Navigator.pushNamed(context, '/support'),
               ),
+              _buildMenuItem(
+                context,
+                title: 'Privacy Policy',
+                subtitle: 'Read our terms and details about your data',
+                icon: Icons.security_outlined,
+                onTap: () => Navigator.pushNamed(context, '/privacy_policy'),
+              ),
               const SizedBox(height: 12),
               // Logout Button
               Padding(

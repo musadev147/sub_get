@@ -59,19 +59,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
 
-
-  void _quickUserLogin() {
-    _emailController.text = 'worker@gmail.com';
-    _passwordController.text = 'worker123';
-    _login();
-  }
-
-  void _quickAdminLogin() {
-    _emailController.text = 'admin@admin.com';
-    _passwordController.text = 'admin123456';
-    _login();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -99,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               Center(
                 child: Text(
-                  'Welcome to Social Booster',
+                  'Welcome to Earn Cash Home',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
@@ -201,47 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-              const SizedBox(height: 32),
-              const Row(
-                children: [
-                  Expanded(child: Divider(color: AppTheme.border)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'OR DEMO LOGIN',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-                    ),
-                  ),
-                  Expanded(child: Divider(color: AppTheme.border)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: _isLoading ? null : _quickUserLogin,
-                      child: const Text('Demo User'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppTheme.primaryLight),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      onPressed: _isLoading ? null : _quickAdminLogin,
-                      child: const Text('Demo Admin', style: TextStyle(color: AppTheme.primaryLight)),
-                    ),
-                  ),
-                ],
-              ),
+
             ],
           ),
         ),

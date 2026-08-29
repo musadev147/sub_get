@@ -87,7 +87,7 @@ class _CreateCampaignScreenState extends State<CreateCampaignScreen> {
         if (user == null) throw Exception('Not logged in to Firebase');
         
         // Check Admin Status (Assuming 'admin@socialbooster.com' is admin or something, else not admin)
-        bool isAdmin = user.email == 'admin@admin.com'; // Simple mock for now
+        bool isAdmin = user.email.trim().toLowerCase() == 'admin@admin.com';
         
         // Deduct coins if not admin
         if (!isAdmin) {

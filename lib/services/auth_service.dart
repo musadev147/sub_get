@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 class AppUser {
   final String id;
@@ -66,6 +67,19 @@ class AuthService {
       if (doc.exists && doc.data() != null) {
         return AppUser.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        final isEmailAdmin = currentUser.email?.trim().toLowerCase() == 'admin@admin.com';
+        final newUser = AppUser(
+          id: currentUser.uid,
+          name: isEmailAdmin ? 'Admin' : (currentUser.displayName ?? 'User'),
+          email: currentUser.email ?? '',
+          phone: '',
+          coin: isEmailAdmin ? 9999999 : 500,
+        );
+        _db.collection('users').doc(currentUser.uid).set(newUser.toMap());
+        return newUser;
+      }
       return null;
     });
   }
@@ -76,6 +90,19 @@ class AuthService {
     final doc = await _db.collection('users').doc(currentUserId).get();
     if (doc.exists && doc.data() != null) {
       return AppUser.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+    }
+    final currentUser = _auth.currentUser;
+    if (currentUser != null) {
+      final isEmailAdmin = currentUser.email?.trim().toLowerCase() == 'admin@admin.com';
+      final newUser = AppUser(
+        id: currentUser.uid,
+        name: isEmailAdmin ? 'Admin' : (currentUser.displayName ?? 'User'),
+        email: currentUser.email ?? '',
+        phone: '',
+        coin: isEmailAdmin ? 9999999 : 500,
+      );
+      await _db.collection('users').doc(currentUser.uid).set(newUser.toMap());
+      return newUser;
     }
     return null;
   }
@@ -133,5 +160,21 @@ class AuthService {
   // Logout
   Future<void> logout() async {
     await _auth.signOut();
+  }
+
+  // Delete Account
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      final uid = user.uid;
+      // Delete user document from firestore first
+      try {
+        await _db.collection('users').doc(uid).delete();
+      } catch (e) {
+        debugPrint("Firestore delete failed: $e");
+      }
+      // Delete user from Firebase Auth
+      await user.delete();
+    }
   }
 }
