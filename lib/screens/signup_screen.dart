@@ -97,7 +97,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 10),
               Center(
                 child: Text(
-                  'Join Earn Cash Home Today',
+                  'Join Social Booster Today',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -106,7 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  'Sign up now to start performing tasks and earning coins',
+                  'Sign up now to start performing tasks and earning rewards',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.textSecondary,

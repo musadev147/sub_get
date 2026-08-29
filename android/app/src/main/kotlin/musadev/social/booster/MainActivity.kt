@@ -1,4 +1,4 @@
-package musadev.earn_cash_home
+package musadev.social.booster
 
 import io.flutter.embedding.android.FlutterActivity
 

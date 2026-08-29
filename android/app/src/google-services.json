@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "1063417017005",
-    "project_id": "earn-cash-home",
-    "storage_bucket": "earn-cash-home.firebasestorage.app"
+    "project_number": "215716925560",
+    "project_id": "boostrewards-f9cd6",
+    "storage_bucket": "boostrewards-f9cd6.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1063417017005:android:6f458d42d2055607a4cc24",
+        "mobilesdk_app_id": "1:215716925560:android:a0ca5e5a3743cb39bc5d8d",
         "android_client_info": {
-          "package_name": "musadev.earn_cash_home"
+          "package_name": "musadev.social.booster"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDM0pqboKFmML3RMwM_VNmu2jbhuxu4Ykk"
+          "current_key": "AIzaSyDr5A7Ui46sNHqLe6gopkN-BTnMfpkLJpI"
         }
       ],
       "services": {

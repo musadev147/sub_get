@@ -11,7 +11,7 @@ plugins {
 }
 
 android {
-    namespace = "musadev.earn_cash_home"
+    namespace = "musadev.social.booster"
     compileSdk = flutter.compileSdkVersion
     // ndkVersion = flutter.ndkVersion
 
@@ -23,7 +23,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "musadev.earn_cash_home"
+        applicationId = "musadev.social.booster"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

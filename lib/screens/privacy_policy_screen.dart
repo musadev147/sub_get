@@ -103,7 +103,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
               context,
               icon: Icons.settings_suggest_outlined,
               title: '2. How We Use Your Info',
-              content: 'We use the collected information to manage user accounts, authenticate identity via Firebase, process task completion proofs, issue reward coins, verify cash withdrawals, and send important service-related notifications.',
+              content: 'We use the collected information to manage user accounts, authenticate identity via Firebase, process task completion proofs, issue reward coins, verify reward redemptions, and send important service-related notifications.',
             ),
             _buildPolicySection(
               context,

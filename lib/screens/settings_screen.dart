@@ -106,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       activeColor: AppTheme.primaryLight,
                       value: _emailAlerts,
                       title: const Text('Email Summaries'),
-                      subtitle: const Text('Get weekly financial cashout logs'),
+                      subtitle: const Text('Get weekly reward history logs'),
                       onChanged: (val) {
                         setState(() {
                           _emailAlerts = val;
@@ -227,7 +227,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: const Column(
                   children: [
                     Text(
-                      'Earn Cash Home App Version v1.0.0',
+                      'Social Booster App Version v1.0.0',
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     SizedBox(height: 6),

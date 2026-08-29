@@ -19,7 +19,7 @@ class _SupportScreenState extends State<SupportScreen> {
 
   final List<Map<String, String>> _faqs = [
     {
-      'question': 'How do I earn coins in Earn Cash Home?',
+      'question': 'How do I earn coins in Social Booster?',
       'answer': 'You can earn coins by navigating to the "Work" tab, choosing an active task, and following its instructions exactly. Typically, this involves visiting links, liking posts, or subscribing, and staying on the target page for the requested duration. Once completed, returns to the app to verify and receive coins instantly.',
     },
     {

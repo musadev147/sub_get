@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.account_balance_wallet_outlined,
+                    Icons.bolt_outlined,
                     size: 48,
                     color: AppTheme.primaryLight,
                   ),
@@ -86,14 +86,14 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
               Center(
                 child: Text(
-                  'Welcome to Earn Cash Home',
+                  'Welcome to Social Booster',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
               ),
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  'Sign in using your email and password to start earning',
+                  'Sign in using your email and password to start boosting',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),

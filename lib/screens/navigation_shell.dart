@@ -85,7 +85,7 @@ class _NavigationShellState extends State<NavigationShell> {
                       ],
                     ),
                     content: const Text(
-                        'Are you sure you want to exit Earn Cash Home?'),
+                        'Are you sure you want to exit Social Booster?'),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
@@ -126,7 +126,7 @@ class _NavigationShellState extends State<NavigationShell> {
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
-                      'Earn Cash Home',
+                      'Social Booster',
                       style: TextStyle(fontSize: 18,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5),
@@ -188,7 +188,7 @@ class _NavigationShellState extends State<NavigationShell> {
                                   borderRadius: BorderRadius.circular(20)),
                               title: const Text('About Us'),
                               content: const Text(
-                                  'Earn Cash Home helps you boost your social media accounts and earn coins by completing simple microtasks.'),
+                                  'Social Booster helps you boost your social media accounts and earn rewards by completing simple microtasks.'),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
