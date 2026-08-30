@@ -6,7 +6,9 @@ import 'package:sub_get/mock_database.dart';
 // Background message handler must be a top-level function
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp();
+  }
   await _saveNotificationLocally(message);
 }
 
