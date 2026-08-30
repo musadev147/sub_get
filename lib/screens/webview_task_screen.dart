@@ -36,12 +36,12 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
   int _currentBalance = 0;
   bool _isLoading = true;
   bool _isGoogleLoggedIn = true; // Start true to prevent flashing red banner while checking
-  RewardedAd? _rewardedAd;
+  BannerAd? _bannerAd;
 
   @override
   void initState() {
     super.initState();
-    _loadRewardedAd();
+    _loadBannerAd();
     
     _playlist = (widget.campaign.links != null && widget.campaign.links!.isNotEmpty) 
         ? widget.campaign.links! 
@@ -132,20 +132,24 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
     }
   }
 
-  void _loadRewardedAd() {
-    RewardedAd.load(
-      // Test Ad Unit ID for Rewarded Ad
-      adUnitId: 'ca-app-pub-3940256099942544/5224354917', 
+  void _loadBannerAd() {
+    _bannerAd?.dispose();
+    _bannerAd = BannerAd(
+      // Google AdMob Test Ad Unit ID for Android Banner Ad
+      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
+      size: AdSize.mediumRectangle,
       request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
+      listener: BannerAdListener(
         onAdLoaded: (ad) {
-          _rewardedAd = ad;
+          debugPrint('BannerAd loaded.');
         },
-        onAdFailedToLoad: (error) {
-          debugPrint('RewardedAd failed to load: $error');
+        onAdFailedToLoad: (ad, error) {
+          debugPrint('BannerAd failed to load: $error');
+          ad.dispose();
+          _bannerAd = null;
         },
       ),
-    );
+    )..load();
   }
 
   void _advanceOrCompleteTask() {
@@ -158,44 +162,84 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
     }
   }
 
-  void _showRewardedAdAndComplete() {
-    if (_rewardedAd == null) {
-      debugPrint('Ad not ready yet. Completing task normally.');
-      _advanceOrCompleteTask();
-      return;
-    }
-    
-    // Pause timer since they are watching an ad
+  void _showAdAndComplete() {
     _timer?.cancel();
-    bool earnedReward = false;
-    
-    _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
-      onAdDismissedFullScreenContent: (ad) {
-        ad.dispose();
-        _rewardedAd = null;
-        _loadRewardedAd(); // Load the next one
-        if (earnedReward) {
-          _advanceOrCompleteTask();
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('You must watch the full ad to earn coins!'), backgroundColor: Colors.redAccent),
+    _showBannerAdDialog();
+  }
+
+  void _showBannerAdDialog() {
+    int adCountdown = 10;
+    Timer? adTimer;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Start countdown timer on first build
+            adTimer ??= Timer.periodic(const Duration(seconds: 1), (timer) {
+              if (adCountdown > 1) {
+                setDialogState(() {
+                  adCountdown--;
+                });
+              } else {
+                timer.cancel();
+                Navigator.pop(dialogContext); // Auto-close dialog
+                _loadBannerAd(); // Reload fresh ad for next time
+                _advanceOrCompleteTask();
+              }
+            });
+
+            return AlertDialog(
+              backgroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              contentPadding: const EdgeInsets.all(16),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Ad',
+                        style: TextStyle(color: Colors.white54, fontSize: 12),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white12,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Closing in ${adCountdown}s',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_bannerAd != null)
+                    SizedBox(
+                      width: 300,
+                      height: 250,
+                      child: AdWidget(ad: _bannerAd!),
+                    )
+                  else
+                    const SizedBox(
+                      width: 300,
+                      height: 250,
+                      child: Center(
+                        child: Text('Loading ad...', style: TextStyle(color: Colors.white54)),
+                      ),
+                    ),
+                ],
+              ),
             );
-          }
-          // Resume timer if they didn't finish the ad, so they can try again
-          _startTimer();
-        }
-      },
-      onAdFailedToShowFullScreenContent: (ad, error) {
-        ad.dispose();
-        _rewardedAd = null;
-        _advanceOrCompleteTask();
+          },
+        );
       },
     );
-    
-    _rewardedAd!.show(onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-      earnedReward = true;
-    });
   }
 
   void _loadCurrentVideo() {
@@ -276,9 +320,10 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
             _advanceOrCompleteTask();
           });
         } else {
-          // Website task time is up, wait for user to click "See More" button
+           // Website task time is up, show ad then auto advance to next task
           if (mounted) {
             setState(() {});
+            _showAdAndComplete();
           }
         }
       }
@@ -313,12 +358,12 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                    ),
                 ),
              );
-          } else {
+           } else {
              bool isAutoPlayEnd = widget.autoPlayCampaigns != null;
              showDialog(
                context: context,
                barrierDismissible: false,
-               builder: (context) => AlertDialog(
+               builder: (dialogContext) => AlertDialog(
                  backgroundColor: AppTheme.cardBg,
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                  title: Column(
@@ -338,7 +383,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                    Center(
                      child: ElevatedButton(
                        onPressed: () {
-                         Navigator.pop(context);
+                         Navigator.pop(dialogContext);
                          Navigator.pop(context, true);
                        },
                        style: ElevatedButton.styleFrom(
@@ -351,6 +396,13 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                  ],
                ),
              );
+             // Auto-dismiss the dialog after 3 seconds
+             Future.delayed(const Duration(seconds: 3), () {
+               if (mounted) {
+                 Navigator.pop(context); // Close dialog
+                 Navigator.pop(context, true); // Go back to previous screen
+               }
+             });
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -391,7 +443,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
   @override
   void dispose() {
     _timer?.cancel();
-    _rewardedAd?.dispose();
+    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -473,7 +525,7 @@ class _WebviewTaskScreenState extends State<WebviewTaskScreen> {
                         bottom: 24,
                         right: 24,
                         child: FloatingActionButton.extended(
-                          onPressed: _showRewardedAdAndComplete,
+                          onPressed: _showAdAndComplete,
                           backgroundColor: AppTheme.secondary,
                           icon: const Icon(Icons.remove_red_eye),
                           label: const Text('See More', style: TextStyle(fontWeight: FontWeight.bold)),

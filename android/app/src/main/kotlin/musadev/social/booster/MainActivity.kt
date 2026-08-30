@@ -1,4 +1,4 @@
-package com.example.sub_get
+package musadev.social.booster
 
 import io.flutter.embedding.android.FlutterActivity
 

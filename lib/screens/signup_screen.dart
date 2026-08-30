@@ -106,7 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  'Sign up now to start performing tasks and earning coins',
+                  'Sign up now to start performing tasks and earning rewards',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppTheme.textSecondary,
@@ -226,10 +226,31 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                     activeColor: AppTheme.primary,
                   ),
-                  const Expanded(
-                    child: Text(
-                      'I agree to the Terms of Service & Privacy Policy',
-                      style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pushNamed(context, '/privacy_policy');
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                        child: RichText(
+                          text: const TextSpan(
+                            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary, fontFamily: 'Outfit'),
+                            children: [
+                              TextSpan(text: 'I agree to the Terms of Service & '),
+                              TextSpan(
+                                text: 'Privacy Policy',
+                                style: TextStyle(
+                                  color: AppTheme.primaryLight,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

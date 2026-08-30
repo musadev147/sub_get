@@ -106,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       activeColor: AppTheme.primaryLight,
                       value: _emailAlerts,
                       title: const Text('Email Summaries'),
-                      subtitle: const Text('Get weekly financial cashout logs'),
+                      subtitle: const Text('Get weekly reward history logs'),
                       onChanged: (val) {
                         setState(() {
                           _emailAlerts = val;
@@ -126,6 +126,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Danger Zone
+              Text(
+                'Danger Zone',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.redAccent),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+                ),
+                child: ListTile(
+                  leading: const Icon(Icons.delete_forever_outlined, color: Colors.redAccent),
+                  title: const Text('Delete Account', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Permanently remove your account & all data'),
+                  trailing: const Icon(Icons.chevron_right, color: Colors.redAccent),
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        backgroundColor: AppTheme.cardBg,
+                        title: const Text('Delete Account', style: TextStyle(color: Colors.redAccent)),
+                        content: const Text(
+                          'Are you sure you want to permanently delete your account and all associated data? This action is irreversible.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (context) => const Center(child: CircularProgressIndicator()),
+                              );
+                              try {
+                                await AuthService().deleteAccount();
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Dismiss progress
+                                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Your account and data have been successfully deleted.'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  Navigator.pop(context); // Dismiss progress
+                                  String errorMsg = e.toString();
+                                  if (errorMsg.contains('requires-recent-login')) {
+                                    errorMsg = 'For security reasons, please log out, sign back in, and try deleting your account again immediately.';
+                                  }
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                      backgroundColor: AppTheme.cardBg,
+                                      title: const Text('Authentication Required'),
+                                      content: Text(errorMsg),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: const Text('Delete Permanently'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),

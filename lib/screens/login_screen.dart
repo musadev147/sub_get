@@ -59,13 +59,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
 
-
-  void _quickUserLogin() {
-    _emailController.text = 'worker@gmail.com';
-    _passwordController.text = 'worker123';
-    _login();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.account_balance_wallet_outlined,
+                    Icons.bolt_outlined,
                     size: 48,
                     color: AppTheme.primaryLight,
                   ),
@@ -100,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               Center(
                 child: Text(
-                  'Sign in using your email and password to start earning',
+                  'Sign in using your email and password to start boosting',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
@@ -192,32 +185,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              const Row(
-                children: [
-                  Expanded(child: Divider(color: AppTheme.border)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'OR DEMO LOGIN',
-                      style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                     ),
-                  ),
-                  Expanded(child: Divider(color: AppTheme.border)),
-                ],
-              ),
-              const SizedBox(height: 20),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  ],
                 ),
-                onPressed: _isLoading ? null : _quickUserLogin,
-                child: const Text('Demo Login'),
-              ),
+
             ],
           ),
         ),

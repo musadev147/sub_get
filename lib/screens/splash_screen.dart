@@ -72,7 +72,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     border: Border.all(color: AppTheme.primary.withOpacity(0.3), width: 2),
                   ),
                   child: const Icon(
-                    Icons.monetization_on_outlined,
+                    Icons.rocket_launch_outlined,
                     size: 80,
                     color: AppTheme.primaryLight,
                   ),

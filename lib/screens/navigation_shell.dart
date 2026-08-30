@@ -188,7 +188,7 @@ class _NavigationShellState extends State<NavigationShell> {
                                   borderRadius: BorderRadius.circular(20)),
                               title: const Text('About Us'),
                               content: const Text(
-                                  'Social Booster helps you boost your social media accounts and earn coins by completing simple microtasks.'),
+                                  'Social Booster helps you boost your social media accounts and earn rewards by completing simple microtasks.'),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),

@@ -90,9 +90,11 @@ class _WorkTabState extends State<WorkTab> {
                   categoryCounts[cat.dbType] = 0;
                 }
 
+                final isAdmin = user.email.trim().toLowerCase() == 'admin@admin.com';
+
                 for (var c in campaigns) {
                   if (c.completedWorkers >= c.totalWorkers) continue;
-                  if (c.createdBy == user.id) continue;
+                  if (c.createdBy == user.id && !isAdmin) continue;
                   if (completedTaskIds.contains(c.id)) continue;
                   
                   bool matched = false;
@@ -110,7 +112,7 @@ class _WorkTabState extends State<WorkTab> {
 
                 final activeCampaigns = campaigns.where((c) {
                   if (c.completedWorkers >= c.totalWorkers) return false;
-                  if (c.createdBy == user.id) return false;
+                  if (c.createdBy == user.id && !isAdmin) return false;
                   if (completedTaskIds.contains(c.id)) return false;
                   
                   if (_selectedFilter != 'All') {
