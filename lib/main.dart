@@ -25,9 +25,11 @@ void main() async {
   
   // Initialize Firebase
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
     // Initialize Push Notifications
     await PushNotificationService.initialize();
   } catch (e) {
